@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/sqlpilot?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    username: root
+    password: 123321456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.sqlpilot.backend.entity
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+ai:
+  rag:
+    url: http://localhost:8000/ai/optimize
+  optimizer:
+    url: http://localhost:8000/api/optimize
+  natural-to-sql-url: http://localhost:8000/api/natural-to-sql
+  timeout: 60000
+
+rule:
+  enabled-rules:
+    - RULE_001
+    - RULE_002
+    - RULE_003
+    - RULE_004
+    - RULE_005

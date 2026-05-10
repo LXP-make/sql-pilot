@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sqlpilot.backend.mapper.SqlAnalysisHistoryMapper">
+    <insert id="insert" parameterType="com.sqlpilot.backend.entity.SqlAnalysisHistory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sql_analysis_history (original_sql, optimized_sql, database_type, syntax_valid, performance_score, risk_level, risk_score, execution_time, analysis_result, created_at, updated_at) 
+        VALUES (#{originalSql}, #{optimizedSql}, #{databaseType}, #{syntaxValid}, #{performanceScore}, #{riskLevel}, #{riskScore}, #{executionTime}, #{analysisResult}, NOW(), NOW())
+    </insert>
+    <select id="selectById" parameterType="java.lang.Long" resultType="com.sqlpilot.backend.entity.SqlAnalysisHistory">
+        SELECT * FROM sql_analysis_history WHERE id = #{id}
+    </select>
+    <select id="selectPage" resultType="com.sqlpilot.backend.entity.SqlAnalysisHistory">
+        SELECT * FROM sql_analysis_history ORDER BY created_at DESC LIMIT #{offset}, #{size}
+    </select>
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM sql_analysis_history
+    </select>
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM sql_analysis_history WHERE id = #{id}
+    </delete>
+</mapper>
