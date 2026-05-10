@@ -1,0 +1,409 @@
+{
+  "document_id": "BIG_COMPANY_SQL_STANDARDS",
+  "title": "大厂SQL开发规范与最佳实践",
+  "version": "1.0",
+  "last_updated": "2024",
+  "sources": [
+    "阿里巴巴数据库规范",
+    "美团技术团队SQL优化实践",
+    "字节跳动数据库最佳实践",
+    "京东技术团队SQL规范",
+    "腾讯数据库规范"
+  ],
+  "sections": [
+    {
+      "category": "一、索引设计规范",
+      "rules": [
+        {
+          "rule_id": "IDX_001",
+          "title": "索引命名规范",
+          "standard": "索引命名采用 idx_{表名}_{字段名} 格式，多个字段用下划线分隔",
+          "example": "idx_users_id_name, idx_orders_user_id_status",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "IDX_002",
+          "title": "索引数量控制",
+          "standard": "单表索引数量不超过5个，避免过多索引影响写入性能",
+          "example": "定期使用 SHOW INDEX FROM table 分析索引使用情况，删除不使用的索引",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "IDX_003",
+          "title": "复合索引最左前缀原则",
+          "standard": "复合索引必须遵循最左前缀原则，查询条件必须包含索引的第一个字段",
+          "example": "INDEX(a,b,c) 可用于 WHERE a=1 / WHERE a=1 AND b=2 / WHERE a=1 AND b=2 AND c=3，但不能用于 WHERE b=2",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "IDX_004",
+          "title": "区分度高的列放在前面",
+          "standard": "复合索引中，区分度高的列放在前面，提高索引效率",
+          "example": "WHERE user_id=1 AND status=2，应创建 INDEX(user_id,status)，user_id区分度更高",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "IDX_005",
+          "title": "避免在索引列上使用函数",
+          "standard": "对索引列使用函数会导致索引失效，包括 YEAR(), MONTH(), DATE(), LEFT() 等",
+          "example": "WHERE YEAR(create_time) = 2024 应改为 WHERE create_time >= '2024-01-01' AND create_time < '2025-01-01'",
+          "source": "京东技术团队SQL规范"
+        },
+        {
+          "rule_id": "IDX_006",
+          "title": "主键设计规范",
+          "standard": "主键使用自增ID或有序UUID，避免使用随机字符串或UUID作为主键",
+          "example": "使用 BIGINT AUTO_INCREMENT 作为主键，不使用 VARCHAR 类型的UUID",
+          "source": "腾讯数据库规范"
+        },
+        {
+          "rule_id": "IDX_007",
+          "title": "为WHERE条件列创建索引",
+          "standard": "经常用于WHERE条件过滤的列应创建索引，特别是区分度高的列",
+          "example": "SELECT * FROM orders WHERE status = 'completed' 应在 status 列创建索引",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "IDX_008",
+          "title": "ORDER BY列应建立索引",
+          "standard": "ORDER BY的列如果有索引，可以避免额外的排序操作（Using filesort）",
+          "example": "ORDER BY create_time DESC 添加 INDEX idx_create_time(create_time)",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "IDX_009",
+          "title": "JOIN列需要索引",
+          "standard": "JOIN关联的列，两边表都需要建立索引，否则会导致严重性能问题",
+          "example": "SELECT * FROM A JOIN B ON A.id = B.a_id，应在 A.id 和 B.a_id 都建立索引",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "IDX_010",
+          "title": "前缀索引的使用",
+          "standard": "对于VARCHAR类型的长字段，可以考虑创建前缀索引减少索引大小",
+          "example": "ALTER TABLE users ADD KEY idx_email (email(10))，取前10个字符作为索引",
+          "source": "京东技术团队SQL规范"
+        }
+      ]
+    },
+    {
+      "category": "二、SQL编写规范",
+      "rules": [
+        {
+          "rule_id": "SQL_001",
+          "title": "避免使用SELECT *",
+          "standard": "禁止使用 SELECT *，必须明确指定需要的字段，减少IO和网络传输",
+          "example": "SELECT id, name, email FROM users WHERE id = 1",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "SQL_002",
+          "title": "避免隐式类型转换",
+          "standard": "WHERE条件中字段类型与比较值类型必须一致，避免隐式类型转换导致索引失效",
+          "example": "INT类型的id列：WHERE id = 123，不能 WHERE id = '123'",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "SQL_003",
+          "title": "禁止在生产环境执行全表删除",
+          "standard": "DELETE和UPDATE操作必须带WHERE条件，生产环境禁止执行无条件的删除更新",
+          "example": "DELETE FROM users WHERE id = 1，必须先SELECT确认影响行数",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "SQL_004",
+          "title": "LIMIT深分页问题",
+          "standard": "禁止使用 LIMIT 100000,10 这样的深分页，应使用游标分页或条件分页",
+          "example": "WHERE id > #{last_id} ORDER BY id LIMIT 10 替代 LIMIT 100000,10",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "SQL_005",
+          "title": "LIKE查询规范",
+          "standard": "避免使用 LIKE '%xxx%' 或 LIKE '%xxx'，前置百分号会导致索引失效",
+          "example": "LIKE 'abc%' 可以使用索引，LIKE '%abc' 无法使用索引",
+          "source": "京东技术团队SQL规范"
+        },
+        {
+          "rule_id": "SQL_006",
+          "title": "OR条件优化",
+          "standard": "OR条件中如果有一列无索引会导致全表扫描，应使用UNION ALL或确保都有索引",
+          "example": "WHERE a=1 OR b=2 应改为 WHERE a=1 UNION ALL SELECT * FROM table WHERE b=2",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "SQL_007",
+          "title": "避免NOT IN子查询",
+          "standard": "NOT IN子查询性能差，且子查询包含NULL时结果不正确",
+          "example": "NOT IN (SELECT id FROM closed) 改为 NOT EXISTS (SELECT 1 FROM closed WHERE id = outer.id)",
+          "source": "腾讯数据库规范"
+        },
+        {
+          "rule_id": "SQL_008",
+          "title": "IN条件数量控制",
+          "standard": "IN条件的值数量不宜过多，建议不超过1000个，可分批处理",
+          "example": "WHERE id IN (1,2,3,...,1000) 超过1000条可分成多批或使用临时表",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "SQL_009",
+          "title": "使用预编译语句",
+          "standard": "使用 PreparedStatement 预编译SQL，提高执行效率和安全性",
+          "example": "JDBC中使用 ? 占位符，通过 setString() setInt() 绑定参数",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "SQL_010",
+          "title": "避免复杂的SQL",
+          "standard": "单条SQL控制在3表JOIN以内，过多JOIN在应用层处理",
+          "example": "超过3表时拆分为多个简单查询，在代码中组装数据",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "SQL_011",
+          "title": "GROUP BY优化",
+          "standard": "GROUP BY的列应有索引，避免额外的排序和临时表",
+          "example": "GROUP BY status 应确保 status 列有索引 INDEX idx_status(status)",
+          "source": "京东技术团队SQL规范"
+        },
+        {
+          "rule_id": "SQL_012",
+          "title": "避免全表扫描",
+          "standard": "查询必须走索引，避免出现 type=ALL 的全表扫描",
+          "example": "使用 EXPLAIN 检查执行计划，确保查询走索引",
+          "source": "腾讯数据库规范"
+        },
+        {
+          "rule_id": "SQL_013",
+          "title": "批量操作优化",
+          "standard": "批量INSERT/UPDATE使用批量语句，减少网络往返",
+          "example": "INSERT INTO users VALUES(1,'a'),(2,'b'),(3,'c') 而非三条单独INSERT",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "SQL_014",
+          "title": "NULL值处理",
+          "standard": "尽量避免NULL值，使用NOT NULL并提供默认值",
+          "example": "ALTER TABLE users MODIFY name VARCHAR(50) NOT NULL DEFAULT ''",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "SQL_015",
+          "title": "使用EXPLAIN分析SQL",
+          "standard": "上线前必须使用EXPLAIN分析执行计划，确保走正确的索引",
+          "example": "EXPLAIN SELECT * FROM users WHERE id = 1",
+          "source": "字节跳动数据库最佳实践"
+        }
+      ]
+    },
+    {
+      "category": "三、表设计规范",
+      "rules": [
+        {
+          "rule_id": "TBL_001",
+          "title": "表名命名规范",
+          "standard": "表名使用小写字母，单词间用下划线分隔，必须以字母开头",
+          "example": "user_info, order_detail, product_category",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "TBL_002",
+          "title": "主键设计",
+          "standard": "必须有主键，使用自增ID作为主键，禁止使用业务逻辑主键",
+          "example": "id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY",
+          "source": "腾讯数据库规范"
+        },
+        {
+          "rule_id": "TBL_003",
+          "title": "字段类型选择",
+          "standard": "选择合适的字段类型，节省存储空间：TINYINT < SMALLINT < INT < BIGINT",
+          "example": "状态字段用 TINYINT，日期用 DATETIME，金额用 DECIMAL(10,2)",
+          "source": "京东技术团队SQL规范"
+        },
+        {
+          "rule_id": "TBL_004",
+          "title": "大字段处理",
+          "standard": "禁止在数据库中存储大文本、大文件，使用文件存储+URL方式",
+          "example": "文章内容存OSS，数据库只存URL",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "TBL_005",
+          "title": "合理拆分大表",
+          "standard": "单表数据量过大时考虑分库分表或历史数据归档",
+          "example": "订单表按月份分表，日志表定期归档到冷库",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "TBL_006",
+          "title": "避免字段默认值依赖",
+          "standard": "业务逻辑不应依赖字段默认值，必须显式赋值",
+          "example": "INSERT时显式指定所有字段值，不依赖默认值",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "TBL_007",
+          "title": "统一字符集",
+          "standard": "数据库、表、字段统一使用UTF8MB4字符集，支持emoji",
+          "example": "CREATE TABLE users (...) DEFAULT CHARSET=utf8mb4",
+          "source": "腾讯数据库规范"
+        },
+        {
+          "rule_id": "TBL_008",
+          "title": "添加必要注释",
+          "standard": "表和字段必须添加注释，说明业务含义",
+          "example": "COMMENT '用户状态：1-正常 2-禁用'",
+          "source": "京东技术团队SQL规范"
+        },
+        {
+          "rule_id": "TBL_009",
+          "title": "控制表宽度",
+          "standard": "单表字段不超过20个，过多字段考虑垂直拆分",
+          "example": "用户表拆分为用户基本信息表和用户扩展信息表",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "TBL_010",
+          "title": "时间字段设计",
+          "standard": "必须包含创建时间和更新时间字段，便于数据追踪",
+          "example": "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, update_time DATETIME ON UPDATE CURRENT_TIMESTAMP",
+          "source": "美团技术团队SQL优化实践"
+        }
+      ]
+    },
+    {
+      "category": "四、事务处理规范",
+      "rules": [
+        {
+          "rule_id": "TXN_001",
+          "title": "事务大小控制",
+          "standard": "事务内SQL控制在100条以内，避免长事务锁定过多数据",
+          "example": "批量更新10万条数据时，分成100批每批1000条",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "TXN_002",
+          "title": "事务超时设置",
+          "standard": "设置合理的事务超时时间，避免长事务占用连接",
+          "example": "innodb_lock_wait_timeout = 5",
+          "source": "腾讯数据库规范"
+        },
+        {
+          "rule_id": "TXN_003",
+          "title": "避免交互式事务",
+          "standard": "禁止在应用层开启事务后等待用户操作，必须快速完成",
+          "example": "不要在事务中等待用户输入或网络响应",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "TXN_004",
+          "title": "读已提交隔离级别",
+          "standard": "使用 READ COMMITTED 隔离级别，避免脏读和不可重复读",
+          "example": "SET TRANSACTION ISOLATION LEVEL READ COMMITTED",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "TXN_005",
+          "title": "热点数据处理",
+          "standard": "高并发热点行访问使用乐观锁或队列，避免行锁竞争",
+          "example": "UPDATE accounts SET balance = balance - #{amount}, version = version + 1 WHERE id = #{id} AND version = #{version}",
+          "source": "京东技术团队SQL规范"
+        }
+      ]
+    },
+    {
+      "category": "五、数据库操作规范",
+      "rules": [
+        {
+          "rule_id": "OPS_001",
+          "title": "禁止删除备份数据",
+          "standard": "除非确认无误，禁止执行 DROP DATABASE、DROP TABLE",
+          "example": "删除前必须备份，敏感操作需要二级审批",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "OPS_002",
+          "title": "变更管理流程",
+          "standard": "所有DDL操作必须走变更流程，禁止直接在线上执行",
+          "example": "使用pt-osc或gh-ost工具进行表结构变更",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "OPS_003",
+          "title": "SQL审核",
+          "standard": "所有SQL必须经过审核工具检查，禁止直接执行未经审核的SQL",
+          "example": "使用SQL审核平台，设置规则拦截问题SQL",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "OPS_004",
+          "title": "慢查询监控",
+          "standard": "开启慢查询日志，监控超过1秒的SQL，及时优化",
+          "example": "slow_query_log = 1, long_query_time = 1",
+          "source": "腾讯数据库规范"
+        },
+        {
+          "rule_id": "OPS_005",
+          "title": "连接池配置",
+          "standard": "合理配置数据库连接池参数，避免连接泄露和连接风暴",
+          "example": "HikariCP: maximum-pool-size=20, min-idle=5, connection-timeout=30000",
+          "source": "京东技术团队SQL规范"
+        },
+        {
+          "rule_id": "OPS_006",
+          "title": "读写分离配置",
+          "standard": "读操作路由到从库，写操作路由到主库",
+          "example": "配置主从复制，将统计查询、复杂查询路由到从库",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "OPS_007",
+          "title": "定期备份策略",
+          "standard": "执行全量备份+增量备份，定期恢复演练确保备份可用",
+          "example": "每天全量备份，每小时增量备份，每周恢复演练",
+          "source": "腾讯数据库规范"
+        }
+      ]
+    },
+    {
+      "category": "六、性能优化建议",
+      "rules": [
+        {
+          "rule_id": "OPT_001",
+          "title": "覆盖索引使用",
+          "standard": "尽量使用覆盖索引，避免回表查询",
+          "example": "SELECT id, name FROM users WHERE name = 'John'，如果索引是 INDEX(name,id) 则不需要回表",
+          "source": "美团技术团队SQL优化实践"
+        },
+        {
+          "rule_id": "OPT_002",
+          "title": "COUNT(*)优化",
+          "standard": "统计行数使用COUNT(*)，InnoDB会自动优化",
+          "example": "SELECT COUNT(*) FROM orders，不要使用COUNT(1)或COUNT(column)",
+          "source": "字节跳动数据库最佳实践"
+        },
+        {
+          "rule_id": "OPT_003",
+          "title": "INSERT批处理",
+          "standard": "批量INSERT使用 LOAD DATA INFILE 或批量INSERT语句",
+          "example": "LOAD DATA INFILE '/tmp/users.csv' INTO TABLE users FIELDS TERMINATED BY ','",
+          "source": "阿里巴巴数据库规范"
+        },
+        {
+          "rule_id": "OPT_004",
+          "title": "临时表使用",
+          "standard": "复杂查询使用临时表分步执行，避免一次性复杂SQL",
+          "example": "将复杂查询拆分为多个简单查询，用临时表存储中间结果",
+          "source": "京东技术团队SQL规范"
+        },
+        {
+          "rule_id": "OPT_005",
+          "title": "EXPLAIN分析要点",
+          "standard": "type列应为ref/range/const，避免ALL；Extra列避免Using filesort/Using temporary",
+          "example": "好的执行计划: type=ref, key=idx_xxx, Extra=Using index condition",
+          "source": "腾讯数据库规范"
+        }
+      ]
+    }
+  ]
+}
