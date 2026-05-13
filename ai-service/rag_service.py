@@ -1,23 +1,17 @@
 import requests
 import chromadb
-from sentence_transformers import SentenceTransformer
 import re
 
 class RagService:
     def __init__(self):
-        self.model = SentenceTransformer('BAAI/bge-small-zh-v1.5')
         self.client = chromadb.PersistentClient(path="./chroma_db")
-        self.collection = self.client.get_collection(name="sql_rules")
+        self.collection = self.client.get_collection(name="sql_knowledge")
         self.ollama_url = "http://127.0.0.1:11434/api/generate"
         self.ollama_model = "qwen2.5:latest"
 
-    def embed_query(self, sql: str) -> list:
-        return self.model.encode(sql).tolist()
-
     def retrieve_knowledge(self, sql: str, n_results: int = 3) -> list:
-        embedding = self.embed_query(sql)
         results = self.collection.query(
-            query_embeddings=[embedding],
+            query_texts=[sql],
             n_results=n_results
         )
         return results["documents"][0]
