@@ -1,26 +1,24 @@
 import requests
 import chromadb
-from sentence_transformers import SentenceTransformer
 import re
 
 class RagService:
     def __init__(self):
-        self.model = SentenceTransformer('BAAI/bge-small-zh-v1.5')
         self.client = chromadb.PersistentClient(path="./chroma_db")
-        self.collection = self.client.get_collection(name="sql_rules")
+        self.collection = self.client.get_collection(name="sql_knowledge")
         self.ollama_url = "http://127.0.0.1:11434/api/generate"
         self.ollama_model = "qwen2.5:latest"
 
-    def embed_query(self, sql: str) -> list:
-        return self.model.encode(sql).tolist()
-
     def retrieve_knowledge(self, sql: str, n_results: int = 3) -> list:
-        embedding = self.embed_query(sql)
-        results = self.collection.query(
-            query_embeddings=[embedding],
-            n_results=n_results
-        )
-        return results["documents"][0]
+        try:
+            results = self.collection.query(
+                query_texts=[sql],
+                n_results=n_results
+            )
+            return results["documents"][0]
+        except Exception as e:
+            print(f"Error retrieving knowledge: {e}")
+            return []
 
     def call_ollama(self, prompt: str) -> str:
         try:
@@ -36,7 +34,8 @@ class RagService:
             response.raise_for_status()
             return response.json()["response"]
         except Exception as e:
-            return f"调用 Ollama 失败: {str(e)}"
+            print(f"Error calling Ollama: {e}")
+            return f"AI调用失败: {str(e)}"
 
     def extract_optimized_sql(self, ai_response: str) -> str:
         match = re.search(r"```sql\n(.*?)\n```", ai_response, re.DOTALL)
@@ -115,3 +114,19 @@ def get_rag_service() -> RagService:
 def analyze_sql(sql: str) -> dict:
     service = get_rag_service()
     return service.analyze_sql(sql)
+
+# Test if Ollama is reachable on startup
+if __name__ == "__main__":
+    print("Testing Ollama connection...")
+    try:
+        response = requests.post(
+            "http://127.0.0.1:11434/api/generate",
+            json={"model": "qwen2.5", "prompt": "Hello", "stream": False},
+            timeout=30
+        )
+        if response.status_code == 200:
+            print("Ollama is ready!")
+        else:
+            print(f"Ollama status: {response.status_code}")
+    except Exception as e:
+        print(f"Ollama not ready: {e}")

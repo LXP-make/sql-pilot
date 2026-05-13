@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sqlpilot.backend.mapper.SqlConverterHistoryMapper">
+    <insert id="insert" parameterType="com.sqlpilot.backend.entity.SqlConverterHistory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sql_converter_history (natural_query, generated_sql, table_schema, confidence, suggestions, execution_time, created_at)
+        VALUES (#{naturalQuery}, #{generatedSql}, #{tableSchema}, #{confidence}, #{suggestions}, #{executionTime}, NOW())
+    </insert>
+    <select id="selectById" parameterType="java.lang.Long" resultType="com.sqlpilot.backend.entity.SqlConverterHistory">
+        SELECT * FROM sql_converter_history WHERE id = #{id}
+    </select>
+    <select id="selectPage" resultType="com.sqlpilot.backend.entity.SqlConverterHistory">
+        SELECT * FROM sql_converter_history ORDER BY created_at DESC LIMIT #{offset}, #{size}
+    </select>
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM sql_converter_history
+    </select>
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM sql_converter_history WHERE id = #{id}
+    </delete>
+</mapper>

@@ -5,6 +5,7 @@ import java.util.List;
 public class SqlOptimizeResponse {
     private String originalSql;
     private String optimizedSql;
+    private List<String> problems;
     private List<OptimizationSuggestion> optimizationSuggestions;
     private String estimatedPerformanceImprovement;
     private Long executionTime;
@@ -23,6 +24,14 @@ public class SqlOptimizeResponse {
 
     public void setOptimizedSql(String optimizedSql) {
         this.optimizedSql = optimizedSql;
+    }
+
+    public List<String> getProblems() {
+        return problems;
+    }
+
+    public void setProblems(List<String> problems) {
+        this.problems = problems;
     }
 
     public List<OptimizationSuggestion> getOptimizationSuggestions() {

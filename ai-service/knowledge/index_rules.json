@@ -1,0 +1,100 @@
+{
+  "document_id": "INDEX_RULES",
+  "title": "索引设计规范",
+  "version": "1.0",
+  "description": "数据库索引设计的规则和最佳实践",
+  "rules": [
+    {
+      "rule_id": "IDX_001",
+      "title": "索引命名规范",
+      "standard": "索引命名采用idx_{表名}_{字段名}格式",
+      "example": "idx_users_id_name, idx_orders_user_id_status",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "rule_id": "IDX_002",
+      "title": "索引数量控制",
+      "standard": "单表索引数量不超过5个",
+      "reason": "过多索引影响写入性能",
+      "suggestion": "定期使用SHOW INDEX分析索引使用情况",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "rule_id": "IDX_003",
+      "title": "复合索引最左前缀原则",
+      "standard": "查询条件必须包含索引的第一个字段",
+      "example": "INDEX(a,b,c)可用于WHERE a=1/WHERE a=1 AND b=2/WHERE a=1 AND b=2 AND c=3",
+      "invalid_example": "WHERE b=2无法使用INDEX(a,b,c)",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "rule_id": "IDX_004",
+      "title": "区分度高的列放在前面",
+      "standard": "复合索引中区分度高的列放在前面",
+      "example": "WHERE user_id=1 AND status=2，应创建INDEX(user_id,status)",
+      "reason": "提高索引效率，快速过滤数据",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "rule_id": "IDX_005",
+      "title": "避免在索引列上使用函数",
+      "standard": "对索引列使用函数会导致索引失效",
+      "bad_example": "WHERE YEAR(create_time) = 2024",
+      "good_example": "WHERE create_time >= '2024-01-01' AND create_time < '2025-01-01'",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "rule_id": "IDX_006",
+      "title": "主键设计规范",
+      "standard": "主键使用自增ID或有序UUID",
+      "bad_example": "使用VARCHAR类型的UUID",
+      "good_example": "BIGINT AUTO_INCREMENT PRIMARY KEY",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "rule_id": "IDX_007",
+      "title": "WHERE条件列建立索引",
+      "standard": "经常用于WHERE条件过滤的列应创建索引",
+      "example": "SELECT * FROM orders WHERE status = 'completed'应在status列创建索引",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "rule_id": "IDX_008",
+      "title": "ORDER BY列建立索引",
+      "standard": "ORDER BY的列如果有索引，可避免Using filesort",
+      "example": "ORDER BY create_time DESC添加INDEX idx_create_time(create_time)",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "rule_id": "IDX_009",
+      "title": "JOIN列需要索引",
+      "standard": "JOIN关联的列，两边表都需要建立索引",
+      "example": "SELECT * FROM A JOIN B ON A.id = B.a_id，应在A.id和B.a_id都建立索引",
+      "reason": "避免嵌套循环全表扫描",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "rule_id": "IDX_010",
+      "title": "覆盖索引使用",
+      "standard": "尽量使用覆盖索引，避免回表查询",
+      "example": "SELECT id, name FROM users WHERE name = 'John'，索引INDEX(name,id)不需要回表",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "rule_id": "IDX_011",
+      "title": "前缀索引的使用",
+      "standard": "VARCHAR类型的长字段可创建前缀索引",
+      "example": "ALTER TABLE users ADD KEY idx_email (email(10))",
+      "reason": "减少索引大小，提高效率",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "rule_id": "IDX_012",
+      "title": "GROUP BY列建立索引",
+      "standard": "GROUP BY的列应有索引",
+      "example": "GROUP BY status应确保status列有索引",
+      "reason": "避免额外的排序和临时表",
+      "source": "腾讯数据库规范"
+    }
+  ]
+}

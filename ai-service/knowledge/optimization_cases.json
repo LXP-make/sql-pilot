@@ -1,0 +1,435 @@
+{
+  "document_id": "OPTIMIZATION_CASES",
+  "title": "SQL优化案例库",
+  "version": "1.0",
+  "description": "真实SQL优化案例，包含问题描述、分析过程和优化方案",
+  "cases": [
+    {
+      "case_id": "CASE_001",
+      "title": "全表扫描优化",
+      "problem": "查询订单列表时出现全表扫描",
+      "original_sql": "SELECT * FROM orders WHERE status = 'completed' AND create_time >= '2024-01-01'",
+      "problem_analysis": "orders表有100万+数据，status和create_time列都没有索引，导致type=ALL全表扫描",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "rows": 1000000,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "在status和create_time列上创建复合索引",
+      "optimized_sql": "SELECT * FROM orders WHERE status = 'completed' AND create_time >= '2024-01-01'",
+      "index_suggestion": "CREATE INDEX idx_orders_status_create_time ON orders(status, create_time)",
+      "expected_improvement": "查询时间从5s优化到50ms",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "case_id": "CASE_002",
+      "title": "覆盖索引优化",
+      "problem": "查询用户列表时需要回表",
+      "original_sql": "SELECT id, name, email FROM users WHERE department = 'tech'",
+      "problem_analysis": "只有idx_department索引，查询需要回表获取name和email字段",
+      "execution_plan": {
+        "type": "ref",
+        "key": "idx_department",
+        "Extra": "Using where; Using index condition"
+      },
+      "optimization_plan": "创建覆盖索引包含所需字段",
+      "optimized_sql": "SELECT id, name, email FROM users WHERE department = 'tech'",
+      "index_suggestion": "CREATE INDEX idx_users_department_name_email ON users(department, name, email)",
+      "expected_improvement": "查询时间从200ms优化到20ms",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "case_id": "CASE_003",
+      "title": "深分页优化",
+      "problem": "深分页查询性能差",
+      "original_sql": "SELECT * FROM orders ORDER BY create_time DESC LIMIT 100000, 10",
+      "problem_analysis": "MySQL需要扫描100010行数据，然后丢弃前100000行",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where; Using filesort"
+      },
+      "optimization_plan": "使用游标分页替代LIMIT offset分页",
+      "optimized_sql": "SELECT * FROM orders WHERE create_time < '2024-01-01' ORDER BY create_time DESC LIMIT 10",
+      "index_suggestion": "确保create_time列有索引",
+      "expected_improvement": "查询时间从800ms优化到10ms",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "case_id": "CASE_004",
+      "title": "NOT IN优化",
+      "problem": "NOT IN子查询性能差",
+      "original_sql": "SELECT * FROM products WHERE id NOT IN (SELECT product_id FROM orders WHERE status = 'refunded')",
+      "problem_analysis": "NOT IN子查询会导致全表扫描，且如果子查询包含NULL结果不正确",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "rows": 500000
+      },
+      "optimization_plan": "使用NOT EXISTS替代NOT IN",
+      "optimized_sql": "SELECT p.* FROM products p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.product_id = p.id AND o.status = 'refunded')",
+      "index_suggestion": "在orders表的product_id和status列创建复合索引",
+      "expected_improvement": "查询时间从10s优化到1s",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "case_id": "CASE_005",
+      "title": "隐式类型转换优化",
+      "problem": "索引列使用字符串比较导致索引失效",
+      "original_sql": "SELECT * FROM users WHERE id = '12345'",
+      "problem_analysis": "id列是INT类型，但比较值是字符串，导致隐式类型转换，索引失效",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "保持类型一致",
+      "optimized_sql": "SELECT * FROM users WHERE id = 12345",
+      "index_suggestion": "id列已有主键索引",
+      "expected_improvement": "查询时间从1s优化到1ms",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "case_id": "CASE_006",
+      "title": "函数操作索引优化",
+      "problem": "对索引列使用函数导致索引失效",
+      "original_sql": "SELECT * FROM orders WHERE YEAR(create_time) = 2024",
+      "problem_analysis": "YEAR()函数操作导致create_time索引失效",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "将函数操作移到等号右边",
+      "optimized_sql": "SELECT * FROM orders WHERE create_time >= '2024-01-01' AND create_time < '2025-01-01'",
+      "index_suggestion": "确保create_time列有索引",
+      "expected_improvement": "查询时间从3s优化到50ms",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "case_id": "CASE_007",
+      "title": "ORDER BY优化",
+      "problem": "ORDER BY导致Using filesort",
+      "original_sql": "SELECT * FROM users WHERE department = 'tech' ORDER BY create_time DESC",
+      "problem_analysis": "ORDER BY列没有索引，导致额外排序操作",
+      "execution_plan": {
+        "type": "ref",
+        "key": "idx_department",
+        "Extra": "Using where; Using filesort"
+      },
+      "optimization_plan": "创建包含ORDER BY列的复合索引",
+      "optimized_sql": "SELECT * FROM users WHERE department = 'tech' ORDER BY create_time DESC",
+      "index_suggestion": "CREATE INDEX idx_users_department_create_time ON users(department, create_time DESC)",
+      "expected_improvement": "查询时间从300ms优化到30ms",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "case_id": "CASE_008",
+      "title": "GROUP BY优化",
+      "problem": "GROUP BY导致Using temporary",
+      "original_sql": "SELECT status, COUNT(*) FROM orders GROUP BY status",
+      "problem_analysis": "GROUP BY列没有索引，导致创建临时表",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using temporary; Using filesort"
+      },
+      "optimization_plan": "在GROUP BY列上创建索引",
+      "optimized_sql": "SELECT status, COUNT(*) FROM orders GROUP BY status",
+      "index_suggestion": "CREATE INDEX idx_orders_status ON orders(status)",
+      "expected_improvement": "查询时间从500ms优化到50ms",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "case_id": "CASE_009",
+      "title": "JOIN优化",
+      "problem": "JOIN操作性能差",
+      "original_sql": "SELECT u.name, o.order_no FROM users u JOIN orders o ON u.id = o.user_id WHERE u.status = 1",
+      "problem_analysis": "orders表的user_id列没有索引，导致嵌套循环全表扫描",
+      "execution_plan": {
+        "table": "o",
+        "type": "ALL",
+        "key": null,
+        "rows": 100000
+      },
+      "optimization_plan": "在JOIN列上创建索引",
+      "optimized_sql": "SELECT u.name, o.order_no FROM users u JOIN orders o ON u.id = o.user_id WHERE u.status = 1",
+      "index_suggestion": "CREATE INDEX idx_orders_user_id ON orders(user_id)",
+      "expected_improvement": "查询时间从5s优化到50ms",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "case_id": "CASE_010",
+      "title": "SELECT *优化",
+      "problem": "使用SELECT *导致性能问题",
+      "original_sql": "SELECT * FROM users WHERE id = 1",
+      "problem_analysis": "SELECT *会查询所有字段，包括大字段，增加IO开销",
+      "execution_plan": {
+        "type": "const",
+        "key": "PRIMARY",
+        "Extra": ""
+      },
+      "optimization_plan": "明确指定需要的字段",
+      "optimized_sql": "SELECT id, name, email FROM users WHERE id = 1",
+      "index_suggestion": "考虑创建覆盖索引",
+      "expected_improvement": "查询时间从10ms优化到2ms，减少数据传输量",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "case_id": "CASE_011",
+      "title": "OR条件优化",
+      "problem": "OR条件导致索引失效",
+      "original_sql": "SELECT * FROM users WHERE name = 'test' OR age = 18",
+      "problem_analysis": "OR条件连接不同列时，MySQL无法有效使用索引",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "拆分为UNION查询",
+      "optimized_sql": "SELECT * FROM users WHERE name = 'test' UNION SELECT * FROM users WHERE age = 18",
+      "index_suggestion": "在name和age列分别创建索引",
+      "expected_improvement": "查询时间从2s优化到50ms",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "case_id": "CASE_012",
+      "title": "LIKE通配符优化",
+      "problem": "LIKE前通配符导致索引失效",
+      "original_sql": "SELECT * FROM users WHERE name LIKE '%test'",
+      "problem_analysis": "LIKE '%xxx'模式无法使用索引",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "使用全文索引或倒排索引",
+      "optimized_sql": "SELECT * FROM users WHERE MATCH(name) AGAINST('test')",
+      "index_suggestion": "ALTER TABLE users ADD FULLTEXT INDEX idx_users_name(name)",
+      "expected_improvement": "查询时间从3s优化到100ms",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "case_id": "CASE_013",
+      "title": "IN列表优化",
+      "problem": "IN列表过长导致性能问题",
+      "original_sql": "SELECT * FROM orders WHERE user_id IN (1, 2, 3, ..., 10000)",
+      "problem_analysis": "IN列表超过1000个值时，优化器无法有效优化",
+      "execution_plan": {
+        "type": "range",
+        "key": "idx_user_id",
+        "rows": 10000
+      },
+      "optimization_plan": "使用临时表或JOIN替代长IN列表",
+      "optimized_sql": "SELECT o.* FROM orders o JOIN temp_user_ids t ON o.user_id = t.user_id",
+      "index_suggestion": "确保user_id列有索引",
+      "expected_improvement": "查询时间从5s优化到500ms",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "case_id": "CASE_014",
+      "title": "NULL值处理优化",
+      "problem": "IS NULL条件导致索引失效",
+      "original_sql": "SELECT * FROM users WHERE email IS NULL",
+      "problem_analysis": "某些场景下IS NULL无法有效使用索引",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "使用默认值替代NULL",
+      "optimized_sql": "SELECT * FROM users WHERE email = ''",
+      "index_suggestion": "在email列创建索引",
+      "expected_improvement": "查询时间从1s优化到10ms",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "case_id": "CASE_015",
+      "title": "派生表优化",
+      "problem": "复杂派生表导致性能问题",
+      "original_sql": "SELECT * FROM (SELECT * FROM orders WHERE status = 1) AS t WHERE t.amount > 100",
+      "problem_analysis": "派生表无法使用索引，导致全表扫描",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "rows": 500000
+      },
+      "optimization_plan": "合并条件到主查询",
+      "optimized_sql": "SELECT * FROM orders WHERE status = 1 AND amount > 100",
+      "index_suggestion": "创建(status, amount)复合索引",
+      "expected_improvement": "查询时间从10s优化到100ms",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "case_id": "CASE_016",
+      "title": "相关子查询优化",
+      "problem": "相关子查询导致逐行执行",
+      "original_sql": "SELECT name, (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) as order_count FROM users u",
+      "problem_analysis": "相关子查询对每个用户执行一次，效率低下",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "rows": 10000
+      },
+      "optimization_plan": "使用JOIN和GROUP BY替代",
+      "optimized_sql": "SELECT u.name, COUNT(o.id) as order_count FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.id",
+      "index_suggestion": "在orders.user_id列创建索引",
+      "expected_improvement": "查询时间从30s优化到1s",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "case_id": "CASE_017",
+      "title": "ORDER BY RAND优化",
+      "problem": "ORDER BY RAND()性能极差",
+      "original_sql": "SELECT * FROM products ORDER BY RAND() LIMIT 10",
+      "problem_analysis": "RAND()需要为每行生成随机数，然后排序",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using temporary; Using filesort"
+      },
+      "optimization_plan": "使用更高效的随机采样方法",
+      "optimized_sql": "SELECT * FROM products WHERE id >= FLOOR(RAND() * (SELECT MAX(id) FROM products)) LIMIT 10",
+      "index_suggestion": "确保id列有主键索引",
+      "expected_improvement": "查询时间从10s优化到100ms",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "case_id": "CASE_018",
+      "title": "数据类型转换优化",
+      "problem": "字符串列与数字比较导致索引失效",
+      "original_sql": "SELECT * FROM users WHERE phone = 13800138000",
+      "problem_analysis": "phone列是VARCHAR类型，与数字比较导致隐式类型转换",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "保持类型一致",
+      "optimized_sql": "SELECT * FROM users WHERE phone = '13800138000'",
+      "index_suggestion": "在phone列创建索引",
+      "expected_improvement": "查询时间从2s优化到1ms",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "case_id": "CASE_019",
+      "title": "复合索引顺序优化",
+      "problem": "复合索引顺序不合理导致索引失效",
+      "original_sql": "SELECT * FROM orders WHERE amount > 100 AND status = 'completed'",
+      "problem_analysis": "索引为(amount, status)，但查询条件顺序不匹配",
+      "execution_plan": {
+        "type": "range",
+        "key": "idx_amount_status",
+        "Extra": "Using where"
+      },
+      "optimization_plan": "调整索引顺序或查询条件",
+      "optimized_sql": "SELECT * FROM orders WHERE status = 'completed' AND amount > 100",
+      "index_suggestion": "重建索引为(status, amount)",
+      "expected_improvement": "查询时间从500ms优化到50ms",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "case_id": "CASE_020",
+      "title": "HAVING优化",
+      "problem": "HAVING子句过滤效率低",
+      "original_sql": "SELECT category, COUNT(*) FROM products GROUP BY category HAVING COUNT(*) > 100",
+      "problem_analysis": "HAVING在GROUP BY之后执行，无法利用索引",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using temporary; Using filesort"
+      },
+      "optimization_plan": "尽可能用WHERE替代HAVING",
+      "optimized_sql": "SELECT category, COUNT(*) FROM products WHERE stock > 0 GROUP BY category HAVING COUNT(*) > 100",
+      "index_suggestion": "创建(category, stock)复合索引",
+      "expected_improvement": "查询时间从2s优化到200ms",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "case_id": "CASE_021",
+      "title": "复合索引最左前缀",
+      "problem": "复合索引顺序不当导致索引失效",
+      "original_sql": "SELECT * FROM users WHERE age > 18 AND name = 'test'",
+      "problem_analysis": "索引为(name, age)，但查询先使用范围条件age，导致name索引无法使用",
+      "execution_plan": {
+        "type": "range",
+        "key": "idx_name_age",
+        "Extra": "Using where"
+      },
+      "optimization_plan": "调整查询条件顺序或重建索引",
+      "optimized_sql": "SELECT * FROM users WHERE name = 'test' AND age > 18",
+      "index_suggestion": "确保等值条件列在复合索引前面",
+      "expected_improvement": "查询时间从500ms优化到50ms",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "case_id": "CASE_022",
+      "title": "范围查询阻断",
+      "problem": "范围查询后索引失效",
+      "original_sql": "SELECT * FROM orders WHERE create_time > '2024-01-01' AND status = 'completed'",
+      "problem_analysis": "create_time是范围条件，导致后面的status无法使用索引",
+      "execution_plan": {
+        "type": "range",
+        "key": "idx_create_time_status",
+        "Extra": "Using where"
+      },
+      "optimization_plan": "将等值条件放在前面",
+      "optimized_sql": "SELECT * FROM orders WHERE status = 'completed' AND create_time > '2024-01-01'",
+      "index_suggestion": "索引顺序应为(status, create_time)",
+      "expected_improvement": "查询时间从1s优化到100ms",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "case_id": "CASE_023",
+      "title": "不等于操作优化",
+      "problem": "NOT EQUAL导致全表扫描",
+      "original_sql": "SELECT * FROM users WHERE name <> 'admin'",
+      "problem_analysis": "<>操作无法使用索引，导致全表扫描",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where"
+      },
+      "optimization_plan": "使用NOT IN或UNION替代",
+      "optimized_sql": "SELECT * FROM users WHERE name < 'admin' UNION SELECT * FROM users WHERE name > 'admin'",
+      "index_suggestion": "在name列创建索引",
+      "expected_improvement": "查询时间从2s优化到100ms",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "case_id": "CASE_024",
+      "title": "隐式JOIN优化",
+      "problem": "隐式JOIN语法性能差",
+      "original_sql": "SELECT * FROM t1, t2, t3 WHERE t1.id = t2.t1_id AND t2.id = t3.t2_id",
+      "problem_analysis": "逗号分隔的隐式JOIN语法可读性差，优化器可能无法正确优化",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "Extra": "Using where; Using join buffer"
+      },
+      "optimization_plan": "使用显式JOIN语法",
+      "optimized_sql": "SELECT * FROM t1 JOIN t2 ON t1.id = t2.t1_id JOIN t3 ON t2.id = t3.t2_id",
+      "index_suggestion": "在t2.t1_id和t3.t2_id创建索引",
+      "expected_improvement": "查询时间从3s优化到200ms",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "case_id": "CASE_025",
+      "title": "多层LEFT JOIN优化",
+      "problem": "多层LEFT JOIN导致性能问题",
+      "original_sql": "SELECT * FROM a LEFT JOIN b ON a.id = b.a_id LEFT JOIN c ON b.id = c.b_id LEFT JOIN d ON c.id = d.c_id",
+      "problem_analysis": "多层LEFT JOIN会产生笛卡尔积，数据量指数增长",
+      "execution_plan": {
+        "type": "ALL",
+        "key": null,
+        "rows": 1000000
+      },
+      "optimization_plan": "减少JOIN层数或使用子查询",
+      "optimized_sql": "SELECT * FROM a LEFT JOIN (SELECT b.*, c.*, d.* FROM b LEFT JOIN c ON b.id = c.b_id LEFT JOIN d ON c.id = d.c_id) AS t ON a.id = t.a_id",
+      "index_suggestion": "在关联列创建索引",
+      "expected_improvement": "查询时间从10s优化到1s",
+      "source": "美团技术团队SQL优化实践"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "document_id": "QUERY_RULES",
+  "title": "SQL查询编写规范",
+  "version": "1.0",
+  "description": "SQL查询语句的编写规则和最佳实践",
+  "rules": [
+    {
+      "rule_id": "QUERY_001",
+      "title": "避免SELECT *",
+      "problem": "使用SELECT *查询所有字段",
+      "reason": "增加IO和网络传输开销，无法使用覆盖索引",
+      "solution": "明确指定需要的字段",
+      "bad_example": "SELECT * FROM users WHERE id = 1",
+      "good_example": "SELECT id, name, email FROM users WHERE id = 1",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "rule_id": "QUERY_002",
+      "title": "避免隐式类型转换",
+      "problem": "WHERE条件中字段类型与比较值类型不一致",
+      "reason": "导致索引失效，触发全表扫描",
+      "solution": "保持类型一致",
+      "bad_example": "WHERE id = '123'",
+      "good_example": "WHERE id = 123",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "rule_id": "QUERY_003",
+      "title": "LIKE查询规范",
+      "problem": "使用LIKE '%xxx%'或LIKE '%xxx'",
+      "reason": "前置百分号导致索引失效",
+      "solution": "避免前置百分号，或使用全文索引",
+      "bad_example": "WHERE name LIKE '%abc'",
+      "good_example": "WHERE name LIKE 'abc%'",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "rule_id": "QUERY_004",
+      "title": "避免深分页",
+      "problem": "使用LIMIT offset, size进行深分页",
+      "reason": "需要扫描大量数据后才能定位到目标数据",
+      "solution": "使用游标分页或条件分页",
+      "bad_example": "LIMIT 100000, 10",
+      "good_example": "WHERE id > #{last_id} ORDER BY id LIMIT 10",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "rule_id": "QUERY_005",
+      "title": "避免NOT IN子查询",
+      "problem": "使用NOT IN子查询",
+      "reason": "性能差，且子查询包含NULL时结果不正确",
+      "solution": "使用NOT EXISTS替代",
+      "bad_example": "WHERE id NOT IN (SELECT id FROM closed)",
+      "good_example": "WHERE NOT EXISTS (SELECT 1 FROM closed WHERE id = outer.id)",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "rule_id": "QUERY_006",
+      "title": "OR条件优化",
+      "problem": "OR条件中部分字段无索引",
+      "reason": "导致全表扫描",
+      "solution": "使用UNION ALL或确保所有字段都有索引",
+      "bad_example": "WHERE a=1 OR b=2",
+      "good_example": "WHERE a=1 UNION ALL SELECT * FROM table WHERE b=2",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "rule_id": "QUERY_007",
+      "title": "IN条件数量控制",
+      "problem": "IN条件包含过多值",
+      "reason": "性能下降，可能导致执行计划选择不当",
+      "solution": "分批处理或使用临时表",
+      "bad_example": "WHERE id IN (1,2,...,10000)",
+      "good_example": "分批查询或使用临时表JOIN",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "rule_id": "QUERY_008",
+      "title": "避免在索引列上使用函数",
+      "problem": "对索引列使用函数操作",
+      "reason": "导致索引失效",
+      "solution": "将函数操作移到等号右边",
+      "bad_example": "WHERE YEAR(create_time) = 2024",
+      "good_example": "WHERE create_time >= '2024-01-01' AND create_time < '2025-01-01'",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "rule_id": "QUERY_009",
+      "title": "JOIN表数量控制",
+      "problem": "单条SQL包含过多JOIN",
+      "reason": "复杂度指数级增长，难以优化",
+      "solution": "拆分为多个简单查询",
+      "bad_example": "5表以上JOIN",
+      "good_example": "控制在3表以内，应用层组装数据",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "rule_id": "QUERY_010",
+      "title": "批量操作优化",
+      "problem": "单条INSERT/UPDATE",
+      "reason": "网络往返开销大",
+      "solution": "使用批量语句",
+      "bad_example": "INSERT INTO users VALUES(1,'a'); INSERT INTO users VALUES(2,'b')",
+      "good_example": "INSERT INTO users VALUES(1,'a'),(2,'b'),(3,'c')",
+      "source": "阿里巴巴数据库规范"
+    }
+  ]
+}

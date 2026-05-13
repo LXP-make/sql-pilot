@@ -1,0 +1,115 @@
+{
+  "document_id": "EXPLAIN_RULES",
+  "title": "执行计划分析规范",
+  "version": "1.0",
+  "description": "MySQL EXPLAIN执行计划分析规则和优化建议",
+  "rules": [
+    {
+      "rule_id": "EXP_001",
+      "title": "type列分析",
+      "standard": "type列应为ref/range/const/system",
+      "bad_values": ["ALL", "index"],
+      "reason": "type=ALL表示全表扫描，性能最差",
+      "optimization": "添加合适的索引",
+      "good_example": "type=ref, key=idx_user_id",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "rule_id": "EXP_002",
+      "title": "key列分析",
+      "standard": "key列应显示使用的索引名称",
+      "bad_value": "NULL",
+      "reason": "key=NULL表示未使用索引",
+      "optimization": "检查WHERE条件和索引设计",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "rule_id": "EXP_003",
+      "title": "Extra列分析-Using filesort",
+      "problem": "Extra列包含Using filesort",
+      "reason": "MySQL需要额外的排序操作",
+      "optimization": "在ORDER BY列上创建索引",
+      "example": "ORDER BY create_time DESC需要INDEX(create_time)",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "rule_id": "EXP_004",
+      "title": "Extra列分析-Using temporary",
+      "problem": "Extra列包含Using temporary",
+      "reason": "MySQL需要创建临时表",
+      "optimization": "在GROUP BY列上创建索引，或优化GROUP BY逻辑",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "rule_id": "EXP_005",
+      "title": "Extra列分析-Using where",
+      "standard": "Extra列包含Using where是正常的",
+      "description": "表示MySQL将在存储引擎检索行后再进行过滤",
+      "source": "腾讯数据库规范"
+    },
+    {
+      "rule_id": "EXP_006",
+      "title": "Extra列分析-Using index",
+      "standard": "Extra列包含Using index是理想状态",
+      "description": "表示使用了覆盖索引，不需要回表",
+      "optimization": "设计覆盖索引减少回表",
+      "source": "阿里巴巴数据库规范"
+    },
+    {
+      "rule_id": "EXP_007",
+      "title": "rows列分析",
+      "standard": "rows列应尽可能小",
+      "reason": "rows表示MySQL认为它执行查询时必须检查的行数",
+      "optimization": "优化索引，减少扫描行数",
+      "source": "字节跳动数据库最佳实践"
+    },
+    {
+      "rule_id": "EXP_008",
+      "title": "possible_keys分析",
+      "standard": "possible_keys应列出可能使用的索引",
+      "bad_value": "NULL",
+      "reason": "没有可用的索引",
+      "optimization": "添加合适的索引",
+      "source": "美团技术团队SQL优化实践"
+    },
+    {
+      "rule_id": "EXP_009",
+      "title": "ref列分析",
+      "standard": "ref列应显示具体的引用",
+      "description": "表示与索引比较的列或常量",
+      "good_example": "ref=const, ref=users.id",
+      "source": "京东技术团队SQL规范"
+    },
+    {
+      "rule_id": "EXP_010",
+      "title": "filtered列分析",
+      "standard": "filtered列应尽可能高",
+      "description": "表示存储引擎返回的行中，有多少百分比被WHERE条件过滤",
+      "optimization": "优化WHERE条件，提高过滤效率",
+      "source": "腾讯数据库规范"
+    }
+  ],
+  "execution_plan_interpretation": {
+    "select_type": {
+      "SIMPLE": "简单SELECT，不使用UNION或子查询",
+      "PRIMARY": "最外层SELECT",
+      "UNION": "UNION中的第二个或后面的SELECT",
+      "SUBQUERY": "子查询中的第一个SELECT",
+      "DERIVED": "派生表"
+    },
+    "type_priority": [
+      {"type": "system", "description": "表只有一行", "priority": 1},
+      {"type": "const", "description": "通过索引一次找到", "priority": 2},
+      {"type": "eq_ref", "description": "唯一索引扫描", "priority": 3},
+      {"type": "ref", "description": "非唯一索引扫描", "priority": 4},
+      {"type": "fulltext", "description": "全文索引", "priority": 5},
+      {"type": "ref_or_null", "description": "类似ref，包含NULL", "priority": 6},
+      {"type": "index_merge", "description": "索引合并", "priority": 7},
+      {"type": "unique_subquery", "description": "子查询唯一索引", "priority": 8},
+      {"type": "index_subquery", "description": "子查询非唯一索引", "priority": 9},
+      {"type": "range", "description": "范围扫描", "priority": 10},
+      {"type": "index", "description": "全索引扫描", "priority": 11},
+      {"type": "ALL", "description": "全表扫描", "priority": 12}
+    ]
+  }
+}

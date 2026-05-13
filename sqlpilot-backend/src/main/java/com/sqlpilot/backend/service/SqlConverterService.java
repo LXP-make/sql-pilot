@@ -1,6 +1,9 @@
 package com.sqlpilot.backend.service;
 
+import com.alibaba.fastjson.JSON;
 import com.sqlpilot.backend.dto.response.NaturalToSqlResponse;
+import com.sqlpilot.backend.entity.SqlConverterHistory;
+import com.sqlpilot.backend.mapper.SqlConverterHistoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -13,6 +16,9 @@ import java.util.Map;
 public class SqlConverterService {
 
     private final RestTemplate restTemplate;
+
+    @Autowired
+    private SqlConverterHistoryMapper converterHistoryMapper;
 
     public SqlConverterService() {
         this.restTemplate = new RestTemplate();
@@ -36,7 +42,25 @@ public class SqlConverterService {
         long executionTime = System.currentTimeMillis() - startTime;
         response.setExecutionTime(executionTime);
 
+        saveConverterHistory(response, tableSchema, executionTime);
+
         return response;
+    }
+
+    private void saveConverterHistory(NaturalToSqlResponse response, Map<String, String[]> tableSchema, long executionTime) {
+        try {
+            SqlConverterHistory history = new SqlConverterHistory();
+            history.setNaturalQuery(response.getNaturalQuery());
+            history.setGeneratedSql(response.getGeneratedSql());
+            history.setTableSchema(tableSchema != null ? JSON.toJSONString(tableSchema) : null);
+            history.setConfidence(response.getConfidence());
+            history.setSuggestions(response.getSuggestions() != null ? JSON.toJSONString(response.getSuggestions()) : null);
+            history.setExecutionTime(executionTime);
+
+            converterHistoryMapper.insert(history);
+        } catch (Exception e) {
+            System.err.println("Failed to save converter history: " + e.getMessage());
+        }
     }
 
     private String generateLocalSql(String naturalQuery) {

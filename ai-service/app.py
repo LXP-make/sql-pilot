@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from rag_service import analyze_sql
 import uvicorn
 
 app = FastAPI(title="SQL Pilot AI Service", version="1.0.0")
@@ -48,6 +47,7 @@ def health_check():
 @app.post("/ai/optimize")
 def optimize(req: OptimizeRequest):
     try:
+        from rag_service import analyze_sql
         result = analyze_sql(req.sql)
         
         return {
@@ -76,6 +76,7 @@ def optimize_backward(req: OptimizeRequest):
 @app.post("/ai/natural-to-sql")
 def natural_to_sql(req: NaturalToSqlRequest):
     try:
+        from rag_service import analyze_sql
         prompt = f"根据以下描述生成SQL语句：{req.natural_query}"
         result = analyze_sql(prompt)
         

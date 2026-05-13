@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 
 spring:
   datasource:
@@ -16,11 +16,9 @@ mybatis:
     map-underscore-to-camel-case: true
 
 ai:
-  rag:
-    url: http://localhost:8000/ai/optimize
-  optimizer:
-    url: http://localhost:8000/api/optimize
-  natural-to-sql-url: http://localhost:8000/api/natural-to-sql
+  service:
+    url: http://localhost:8080
+    optimize-path: /ai/optimize
   timeout: 60000
 
 rule:
