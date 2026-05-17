@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sqlpilot.backend.mapper.SqlOptimizationHistoryMapper">
     <insert id="insert" parameterType="com.sqlpilot.backend.entity.SqlOptimizationHistory" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sql_optimization_history (original_sql, optimized_sql, optimization_level, include_index_suggestion, optimization_suggestions, problems, estimated_improvement, execution_time, source, created_at)
