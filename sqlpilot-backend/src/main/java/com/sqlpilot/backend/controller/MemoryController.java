@@ -1,5 +1,6 @@
 package com.sqlpilot.backend.controller;
 
+import com.sqlpilot.backend.dto.request.FeedbackRequest;
 import com.sqlpilot.backend.entity.SqlAnalysisHistory;
 import com.sqlpilot.backend.service.MemoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,12 +78,12 @@ public class MemoryController {
     }
 
     @PostMapping("/feedback")
-    public ResponseEntity<Map<String, Object>> submitFeedback(
-            @RequestParam String conversationId,
-            @RequestParam String userId,
-            @RequestParam Integer rating,
-            @RequestParam(required = false) String comment,
-            @RequestParam(required = false) String correctedAnswer) {
+    public ResponseEntity<Map<String, Object>> submitFeedback(@RequestBody FeedbackRequest request) {
+        String conversationId = request.getConversationId();
+        String userId = request.getUserId();
+        Integer rating = request.getRating();
+        String comment = request.getComment();
+        String correctedAnswer = request.getCorrectedAnswer();
         
         Map<String, Object> result = memoryService.recordFeedback(conversationId, userId, rating, comment, correctedAnswer);
         

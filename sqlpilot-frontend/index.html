@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Pilot - AI SQL优化助手</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .app-container { min-height: 100vh; display: flex; flex-direction: column; }
+    .app-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header-content { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .logo { display: flex; align-items: center; gap: 0.75rem; }
+    .logo-icon { font-size: 1.75rem; }
+    .logo-text { font-size: 1.5rem; font-weight: 700; }
+    .nav-menu { display: flex; gap: 2rem; }
+    .nav-item { color: rgba(255,255,255,0.9); text-decoration: none; padding: 0.5rem 1rem; border-radius: 8px; transition: all 0.3s ease; }
+    .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.2); color: white; }
+    .app-main { flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; padding: 2rem; }
+    .app-footer { text-align: center; padding: 1.5rem; background: #f5f5f5; color: #666; font-size: 0.9rem; }
+    .code-block { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; overflow-x: auto; white-space: pre-wrap; }
+    .page-header { text-align: center; margin-bottom: 2rem; }
+    .page-header h1 { font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; }
+    .page-header p { color: #64748b; }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+    .btn-secondary { background: white; color: #667eea; padding: 0.75rem 1.5rem; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+    .btn-secondary:hover { border-color: #667eea; }
+    .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+    .card-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: #1e293b; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #475569; }
+    textarea { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 14px; resize: vertical; }
+    textarea:focus { outline: none; border-color: #667eea; }
+    input[type="text"] { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+    input[type="text"]:focus { outline: none; border-color: #667eea; }
+    .form-actions { display: flex; gap: 1rem; margin-top: 1rem; }
+    .hero-section { background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%); border-radius: 20px; padding: 3rem 2rem; margin-bottom: 2rem; }
+    .hero-title { font-size: 3rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem; }
+    .hero-subtitle { font-size: 1.5rem; color: #667eea; font-weight: 600; margin-bottom: 0.5rem; }
+    .hero-desc { color: #64748b; margin-bottom: 2rem; }
+    .hero-buttons { display: flex; gap: 1rem; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+    .feature-card { background: white; padding: 2rem; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; }
+    .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .feature-card h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-card p { color: #64748b; font-size: 0.9rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+    .stat-card { text-align: center; padding: 2rem; background: #f8fafc; border-radius: 12px; }
+    .stat-value { font-size: 2.5rem; font-weight: 800; color: #667eea; }
+    .stat-label { color: #64748b; font-size: 0.9rem; }
+    .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .rating-stars { display: flex; gap: 0.5rem; font-size: 1.5rem; }
+    .star { cursor: pointer; color: #e2e8f0; }
+    .star.active { color: #ff9900; }
+    .feedback-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
+    .examples { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+    .example-item { background: #f8fafc; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; color: #64748b; cursor: pointer; border: 1px solid #e2e8f0; }
+    .example-item:hover { background: #e0e7ff; color: #667eea; }
+    .loading { opacity: 0.6; pointer-events: none; }
+    @media (max-width: 900px) { .main-content { grid-template-columns: 1fr; } .hero-title { font-size: 2rem; } }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="/src/main.js"></script>
+</body>
+</html>

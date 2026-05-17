@@ -159,9 +159,25 @@ class RagService:
         if match:
             return match.group(1).strip()
         
-        match = re.search(r"```\n(.*?)\n```", ai_response, re.DOTALL)
+        match = re.search(r"```\w*\n(.*?)\n```", ai_response, re.DOTALL)
         if match:
-            return match.group(1).strip()
+            content = match.group(1).strip()
+            if content.startswith("{"):
+                try:
+                    data = json.loads(content)
+                    if "optimized_sql" in data:
+                        return data["optimized_sql"]
+                except:
+                    pass
+            return content
+        
+        if ai_response.startswith("{"):
+            try:
+                data = json.loads(ai_response)
+                if "optimized_sql" in data:
+                    return data["optimized_sql"]
+            except:
+                pass
         
         lines = ai_response.split("\n")
         for line in lines:
@@ -201,6 +217,16 @@ class RagService:
 
 请基于以上知识分析以下SQL：
 {sql}
+
+优化规则：
+1. 必须将SELECT *改为具体字段列表
+2. 对于LIKE '%xxx%'查询，建议使用全文索引或其他优化方式
+3. 检查WHERE条件中的字段是否需要索引
+4. 优化JOIN语句，确保ON条件使用索引字段
+5. 避免不必要的DISTINCT和ORDER BY
+6. 使用LIMIT限制返回行数
+7. 将IN子查询转换为JOIN语句，提高查询效率
+8. 使用表别名简化SQL语句
 
 请返回JSON格式，包含以下字段：
 {{

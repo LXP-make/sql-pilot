@@ -59,7 +59,14 @@ def optimize(req: OptimizeRequest):
                     {"type": "rag", "description": s} 
                     for s in result["suggestions"]
                 ],
-                "problems": result["problems"]
+                "problems": result["problems"],
+                "rag_info": [
+                    {
+                        "filename": doc["filename"],
+                        "keyword_score": doc["keyword_score"],
+                        "semantic_score": doc["semantic_score"]
+                    } for doc in result.get("retrieved_knowledge", [])
+                ]
             }
         }
     except Exception as e:

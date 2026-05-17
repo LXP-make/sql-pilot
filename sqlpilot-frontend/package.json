@@ -1,0 +1,21 @@
+{
+  "name": "sqlpilot-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.4.21",
+    "axios": "^1.6.8",
+    "element-plus": "^2.6.1",
+    "vue-router": "^4.3.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.2.0",
+    "sass": "^1.72.0"
+  }
+}
