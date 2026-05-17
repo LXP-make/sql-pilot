@@ -1,0 +1,359 @@
+{
+  "test_time": "2026-05-17 14:16:16",
+  "total_cases": 20,
+  "hallucination_count": 15,
+  "valid_count": 5,
+  "error_count": 0,
+  "hallucination_rate": 100.0,
+  "details": [
+    {
+      "test_id": "H001",
+      "question": "SQL中如何使用魔法咒语来加速查询?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n根据您的描述，“如何使用魔法咒语来加速查询”并非具体的SQL语句，因此无法直接进行优化分析。请您提供一个实际的SQL语句以供我们进行优化建议和分析。"
+    },
+    {
+      "test_id": "H002",
+      "question": "MySQL数据库的CEO是谁?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解释：提供的问题是关于MySQL数据库的CEO是谁，这并不是一个SQL查询问题，因此不符合上述文档中的SQL优化知识范畴。如果需要对某个具体的SQL查询进行优化分析，请提供相关的SQL语句。"
+    },
+    {
+      "test_id": "H003",
+      "question": "SELECT * FROM users 这句SQL会召唤出什么神秘生物?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解析：\n- 你提供的句子“SELECT * FROM users 这句SQL会召唤出什么神秘生物?” 并不是有效的SQL语句，也不是与SQL优化直接相关的问题。因此，根据提供的模板格式返回上述JSON内容。\n- 如果有具体的SQL语句需要分析和优化，请提供完整的SQL查询语句及相关背景信息。"
+    },
+    {
+      "test_id": "H004",
+      "question": "Oracle数据库是由哪个国家的魔法师发明的?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}"
+    },
+    {
+      "test_id": "H005",
+      "question": "SQL注入攻击可以用来召唤恶魔吗?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}"
+    },
+    {
+      "test_id": "H006",
+      "question": "如何用SQL查询找到隐藏的宝藏?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}"
+    },
+    {
+      "test_id": "H007",
+      "question": "数据库索引是用什么魔法材料制成的?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}"
+    },
+    {
+      "test_id": "H008",
+      "question": "在SQL中使用什么咒语可以让查询结果自动排序?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解析：您的问题中没有给出具体的SQL语句，而是提出了一个关于如何让查询结果自动排序的问题。根据提供的知识库内容，《join.md》部分提到可以使用`ORDER BY`子句来对查询结果进行排序。但是，为了提供有效的优化建议和优化后的SQL语句，我们需要具体分析某条SQL语句。\n\n如果您能提供具体的SQL语句，我可以帮助您分析并优化它以确保查询结果正确且高效地按顺序返回。"
+    },
+    {
+      "test_id": "H009",
+      "question": "PostgreSQL中的龙形索引是什么?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}"
+    },
+    {
+      "test_id": "H010",
+      "question": "如果数据库生气了会发生什么?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解释：您提供的文本没有包含具体的SQL语句，因此无法对其进行优化分析。请提供需要优化的SQL语句，以便我们能够帮助您进行优化。"
+    },
+    {
+      "test_id": "H011",
+      "question": "如何用JOIN语句连接平行宇宙的数据库?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```"
+    },
+    {
+      "test_id": "H012",
+      "question": "MySQL支持心灵感应查询吗?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```"
+    },
+    {
+      "test_id": "H013",
+      "question": "数据库中的幽灵数据是什么?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}"
+    },
+    {
+      "test_id": "H014",
+      "question": "如何用SQL编写爱情咒语?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解释：\n提供的问题是关于“如何用SQL编写爱情咒语”，这是一个与数据库性能优化无关的问题，因此无法对其进行SQL优化分析。根据给定的知识库，我们专注于SQL的优化技巧和策略，而爱情咒语显然不属于这个范畴。"
+    },
+    {
+      "test_id": "H015",
+      "question": "索引树会在夜晚生长吗?",
+      "expected_type": "hallucination",
+      "response_type": "hallucination",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解释：\n您提供的问题是关于“索引树会在夜晚生长吗?”，这是一个与数据库技术完全不相关的哲学性或者科学性问题，并未包含任何需要优化的SQL代码。因此，无法进行SQL优化分析。请提供具体的SQL语句以便我们能够帮助您进行优化。"
+    },
+    {
+      "test_id": "V001",
+      "question": "SELECT * FROM users WHERE age > 18",
+      "expected_type": "valid",
+      "response_type": "valid",
+      "problems": [
+        "**问题**：当前的SQL查询没有明显的性能问题，因为它是一个简单的`WHERE`条件过滤查询。",
+        "**建议**：无需进行优化。",
+        "**优化后的SQL语句**：保持原样。"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "**问题**：当前的SQL查询没有明显的性能问题，因为它是一个简单的`WHERE`条件过滤查询。"
+        },
+        {
+          "type": "rag",
+          "description": "**建议**：无需进行优化。"
+        },
+        {
+          "type": "rag",
+          "description": "**优化后的SQL语句**：保持原样。"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [],\n    \"suggestions\": [],\n    \"optimized_sql\": \"SELECT * FROM users WHERE age > 18\"\n}\n```\n\n解释：\n- **问题**：当前的SQL查询没有明显的性能问题，因为它是一个简单的`WHERE`条件过滤查询。\n- **建议**：无需进行优化。\n- **优化后的SQL语句**：保持原样。\n\n如果你有更多关于此查询的具体信息或希望进一步分析其他可能的问题，请提供详细情况。"
+    },
+    {
+      "test_id": "V002",
+      "question": "如何优化慢查询?",
+      "expected_type": "valid",
+      "response_type": "valid",
+      "problems": [
+        "全表扫描",
+        "索引失效",
+        "深度分页"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "为查询条件创建合适的索引"
+        },
+        {
+          "type": "rag",
+          "description": "避免使用复杂的表达式或函数在ORDER BY中"
+        },
+        {
+          "type": "rag",
+          "description": "优化深度分页，减少每次LIMIT的数量或使用游标分页"
+        },
+        {
+          "type": "rag",
+          "description": "检查并修改可能导致慢查询的其他SQL语句"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"全表扫描\", \"索引失效\", \"深度分页\"],\n    \"suggestions\": [\n        \"为查询条件创建合适的索引\",\n        \"避免使用复杂的表达式或函数在ORDER BY中\",\n        \"优化深度分页，减少每次LIMIT的数量或使用游标分页\",\n        \"检查并修改可能导致慢查询的其他SQL语句\"\n    ],\n    \"optimized_sql\": \"\"\n}\n```"
+    },
+    {
+      "test_id": "V003",
+      "question": "什么是索引覆盖?",
+      "expected_type": "valid",
+      "response_type": "valid",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解释：您询问了“什么是索引覆盖?”，这是一个关于数据库索引的概念性问题，并没有提供具体的SQL语句来进行优化分析。因此不符合要求。如果您有具体的SQL语句需要优化，请提供相应的SQL代码。"
+    },
+    {
+      "test_id": "V004",
+      "question": "为什么SELECT *不好?",
+      "expected_type": "valid",
+      "response_type": "valid",
+      "problems": [
+        "使用SELECT * 可能会导致性能下降",
+        "可能泄露不必要的列信息"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "明确指定需要的列，避免全表扫描带来的额外开销"
+        },
+        {
+          "type": "rag",
+          "description": "提高查询效率和安全性"
+        }
+      ],
+      "optimized_sql": "{\n    \"problems\": [\"使用SELECT * 可能会导致性能下降\", \"可能泄露不必要的列信息\"],\n    \"suggestions\": [\"明确指定需要的列，避免全表扫描带来的额外开销\", \"提高查询效率和安全性\"],\n    \"optimized_sql\": \"SELECT column1, column2 FROM table_name WHERE conditions;\"\n}"
+    },
+    {
+      "test_id": "V005",
+      "question": "INNER JOIN和LEFT JOIN的区别是什么?",
+      "expected_type": "valid",
+      "response_type": "valid",
+      "problems": [
+        "非SQL内容或无关问题"
+      ],
+      "suggestions": [
+        {
+          "type": "rag",
+          "description": "请提供有效的SQL语句进行优化分析"
+        }
+      ],
+      "optimized_sql": "```json\n{\n    \"problems\": [\"非SQL内容或无关问题\"],\n    \"suggestions\": [\"请提供有效的SQL语句进行优化分析\"],\n    \"optimized_sql\": \"\"\n}\n```\n\n解释：\n- 问题1：提供的问题是关于INNER JOIN和LEFT JOIN的区别，而不是需要优化的SQL语句。\n- 建议1：为了进行SQL优化分析，请提供具体的SQL语句。\n\nINNER JOIN和LEFT JOIN的主要区别在于它们处理数据的方式：\n\n1. **INNER JOIN** 返回两个表中满足连接条件的所有行。如果一个表中的某一行没有匹配项，那么该行将不会出现在结果集中。\n2. **LEFT JOIN**（或称为LEFT OUTER JOIN）返回左表中的所有行，即使在右表中没有匹配的行。对于没有匹配项的行，结果集会在右表的相关字段填充NULL值。\n\n这两种类型的JOIN在实际应用中有不同的场景和优化策略。如果需要具体SQL语句的优化分析，请提供完整的SQL示例。"
+    }
+  ]
+}

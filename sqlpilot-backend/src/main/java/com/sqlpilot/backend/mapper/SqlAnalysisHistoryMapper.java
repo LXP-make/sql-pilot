@@ -10,4 +10,8 @@ public interface SqlAnalysisHistoryMapper {
     List<SqlAnalysisHistory> selectPage(@Param("offset") int offset, @Param("size") int size);
     Long count();
     void deleteById(@Param("id") Long id);
+    
+    List<SqlAnalysisHistory> selectByDatabaseType(@Param("databaseType") String databaseType);
+    List<SqlAnalysisHistory> selectRecentByDatabaseType(@Param("databaseType") String databaseType, @Param("limit") int limit);
+    List<SqlAnalysisHistory> selectAll();
 }

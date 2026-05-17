@@ -1,0 +1,18 @@
+{
+  "e2713ec6-05d5-4b65-8629-fb6171732afc": [
+    {
+      "id": "b22cac70-74de-4663-aa99-ecadcef80710",
+      "rating": 5,
+      "comment": "\u56de\u7b54\u975e\u5e38\u6709\u5e2e\u52a9\uff0c\u4f18\u5316\u5efa\u8bae\u5f88\u5b9e\u7528\uff01",
+      "corrected_answer": null,
+      "timestamp": "2026-05-17T14:35:12.758486"
+    },
+    {
+      "id": "8820dd04-ab64-4cd8-9394-074c00bc2169",
+      "rating": 1,
+      "comment": "\u56de\u7b54\u4e0d\u51c6\u786e\uff0c\u6ca1\u6709\u89e3\u51b3\u6211\u7684\u95ee\u9898",
+      "corrected_answer": "\u6b63\u786e\u7684\u4f18\u5316\u65b9\u6cd5\u5e94\u8be5\u662f\u6dfb\u52a0\u7d22\u5f15\u5230age\u5b57\u6bb5\uff0c\u4f7f\u7528SELECT\u5177\u4f53\u5b57\u6bb5\u800c\u975eSELECT *",
+      "timestamp": "2026-05-17T14:35:12.767548"
+    }
+  ]
+}

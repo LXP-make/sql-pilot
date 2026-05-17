@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sqlpilot.backend.mapper.SqlAnalysisHistoryMapper">
     <insert id="insert" parameterType="com.sqlpilot.backend.entity.SqlAnalysisHistory" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sql_analysis_history (original_sql, optimized_sql, database_type, syntax_valid, performance_score, risk_level, risk_score, execution_time, analysis_result, created_at, updated_at) 
@@ -17,4 +17,16 @@
     <delete id="deleteById" parameterType="java.lang.Long">
         DELETE FROM sql_analysis_history WHERE id = #{id}
     </delete>
+    
+    <select id="selectByDatabaseType" resultType="com.sqlpilot.backend.entity.SqlAnalysisHistory">
+        SELECT id, original_sql as originalSql, optimized_sql as optimizedSql, database_type as databaseType, syntax_valid as syntaxValid, performance_score as performanceScore, risk_level as riskLevel, risk_score as riskScore, execution_time as executionTime, analysis_result as analysisResult, created_at as createdAt, updated_at as updatedAt FROM sql_analysis_history WHERE database_type = #{databaseType} ORDER BY created_at DESC
+    </select>
+    
+    <select id="selectRecentByDatabaseType" resultType="com.sqlpilot.backend.entity.SqlAnalysisHistory">
+        SELECT id, original_sql as originalSql, optimized_sql as optimizedSql, database_type as databaseType, syntax_valid as syntaxValid, performance_score as performanceScore, risk_level as riskLevel, risk_score as riskScore, execution_time as executionTime, analysis_result as analysisResult, created_at as createdAt, updated_at as updatedAt FROM sql_analysis_history WHERE database_type = #{databaseType} ORDER BY created_at DESC LIMIT #{limit}
+    </select>
+    
+    <select id="selectAll" resultType="com.sqlpilot.backend.entity.SqlAnalysisHistory">
+        SELECT id, original_sql as originalSql, optimized_sql as optimizedSql, database_type as databaseType, syntax_valid as syntaxValid, performance_score as performanceScore, risk_level as riskLevel, risk_score as riskScore, execution_time as executionTime, analysis_result as analysisResult, created_at as createdAt, updated_at as updatedAt FROM sql_analysis_history ORDER BY created_at DESC
+    </select>
 </mapper>
