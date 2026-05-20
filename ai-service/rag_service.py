@@ -1,156 +1,112 @@
-import requests
 import json
 import re
-from collections import OrderedDict
+import os
+import chromadb
+from sentence_transformers import SentenceTransformer
 from memory_system import get_memory_system, get_reward_system
 
-class HybridRetriever:
+CHROMA_DB_PATH = "./chroma_db"
+COLLECTION_NAME = "sql_rules"
+EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"
+TOP_K = 5
+
+
+class ChromaRetriever:
+    """Retrieves relevant knowledge from ChromaDB using semantic search."""
+
     def __init__(self):
-        self.ollama_embedding_url = "http://127.0.0.1:11434/api/embeddings"
-        self.ollama_model = "qwen2.5"
-        self.knowledge_base = self._load_knowledge_base()
-        self.document_embeddings = {}
+        self._model = None
+        self._collection = None
+        self._keyword_cache = {}
 
-    def _load_knowledge_base(self):
-        import os
-        knowledge = []
-        knowledge_dir = "./knowledge"
-        
-        if os.path.exists(knowledge_dir):
-            for root, dirs, files in os.walk(knowledge_dir):
-                for file in files:
-                    if file.endswith(".md"):
-                        try:
-                            with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                                content = f.read()
-                                knowledge.append({
-                                    "filename": file,
-                                    "content": content[:3000],
-                                    "short_content": content[:500]
-                                })
-                        except Exception as e:
-                            print(f"加载文件失败 {file}: {e}")
-        return knowledge
+    def _get_model(self):
+        if self._model is None:
+            self._model = SentenceTransformer(EMBEDDING_MODEL)
+        return self._model
 
-    def _generate_embedding(self, text: str) -> list:
-        try:
-            response = requests.post(
-                self.ollama_embedding_url,
-                json={"model": self.ollama_model, "prompt": text},
-                timeout=60
-            )
-            response.raise_for_status()
-            return response.json().get("embedding", [])
-        except Exception as e:
-            print(f"嵌入生成失败: {str(e)}")
-            return []
+    def _get_collection(self):
+        if self._collection is None:
+            client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+            self._collection = client.get_or_create_collection(name=COLLECTION_NAME)
+        return self._collection
 
-    def _cosine_similarity(self, vec1: list, vec2: list) -> float:
-        if not vec1 or not vec2:
-            return 0.0
-        dot_product = sum(a * b for a, b in zip(vec1, vec2))
-        norm1 = sum(a * a for a in vec1) ** 0.5
-        norm2 = sum(b * b for b in vec2) ** 0.5
-        if norm1 == 0 or norm2 == 0:
-            return 0.0
-        return dot_product / (norm1 * norm2)
-
-    def _keyword_match_score(self, query: str, doc: dict) -> float:
+    def _keyword_boost(self, query: str, documents: list[str]) -> list[float]:
+        """Compute a simple keyword match boost for re-ranking."""
         query_lower = query.lower()
-        content_lower = doc["content"].lower()
-        score = 0.0
-        
-        keywords = {
-            'select *': 5, 'select': 2,
-            'join': 4, 'inner join': 4, 'left join': 4, 'right join': 4,
-            'index': 4, '索引': 4,
-            'where': 1,
-            'like': 3, 'like %': 3,
-            'limit': 2, 'offset': 2,
-            'order by': 2, 'group by': 2,
-            'subquery': 3, '子查询': 3,
-            'union': 2,
-            'distinct': 2,
-            'count': 1, 'sum': 1, 'avg': 1, 'max': 1, 'min': 1,
-            'optimize': 3, '优化': 3,
-            'performance': 3, '性能': 3,
-            'slow': 3, '慢查询': 3
-        }
-        
-        for keyword, weight in keywords.items():
-            if keyword in query_lower and keyword in content_lower:
-                score += weight
-        
-        return score
+        keywords = re.findall(r"[a-zA-Z_]+", query_lower)
 
-    def _semantic_match_score(self, query_embedding: list, doc: dict) -> float:
-        doc_key = doc["filename"]
-        
-        if doc_key not in self.document_embeddings:
-            doc_embedding = self._generate_embedding(doc["short_content"])
-            self.document_embeddings[doc_key] = doc_embedding
-        else:
-            doc_embedding = self.document_embeddings[doc_key]
-        
-        return self._cosine_similarity(query_embedding, doc_embedding)
+        boosts = []
+        for doc in documents:
+            doc_lower = doc.lower()
+            score = sum(2 for kw in keywords if len(kw) > 2 and kw in doc_lower)
+            boosts.append(score)
+        return boosts
 
-    def retrieve(self, query: str, n_results: int = 3, keyword_weight: float = 0.4, semantic_weight: float = 0.6) -> list:
-        if not self.knowledge_base:
+    def retrieve(self, query: str, n_results: int = 3) -> list[dict]:
+        """Search ChromaDB with semantic + keyword hybrid scoring."""
+        collection = self._get_collection()
+        model = self._get_model()
+
+        query_embedding = model.encode(query).tolist()
+
+        n_query = max(n_results * 3, TOP_K)
+        results = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=n_query,
+        )
+
+        if not results["ids"] or not results["ids"][0]:
             return []
-        
-        query_embedding = self._generate_embedding(query)
-        results = []
-        
-        for doc in self.knowledge_base:
-            keyword_score = self._keyword_match_score(query, doc)
-            semantic_score = self._semantic_match_score(query_embedding, doc)
-            
-            max_keyword = max(self._keyword_match_score(q, doc) for q in ["select *", "join", "index", "where"] + [query])
-            if max_keyword > 0:
-                keyword_score = keyword_score / max_keyword
-            
-            combined_score = (keyword_score * keyword_weight) + (semantic_score * semantic_weight)
-            
-            if combined_score > 0.01:
-                results.append({
-                    "score": combined_score,
-                    "keyword_score": keyword_score,
-                    "semantic_score": semantic_score,
-                    "filename": doc["filename"],
-                    "content": doc["content"]
-                })
-        
-        results.sort(key=lambda x: -x["score"])
-        
-        return [{
-            "content": r["content"],
-            "filename": r["filename"],
-            "score": r["score"],
-            "keyword_score": r["keyword_score"],
-            "semantic_score": r["semantic_score"]
-        } for r in results[:n_results]]
+
+        ids = results["ids"][0]
+        documents = results["documents"][0]
+        metadatas = results["metadatas"][0]
+        distances = results["distances"][0]
+
+        semantic_scores = [1 - d for d in distances]
+        keyword_boosts = self._keyword_boost(query, documents)
+
+        combined = []
+        for i in range(len(ids)):
+            combined_score = semantic_scores[i] * 0.7 + min(keyword_boosts[i] * 0.05, 0.3)
+            combined.append({
+                "filename": metadatas[i].get("source", "unknown"),
+                "content": documents[i][:2000],
+                "score": round(combined_score, 4),
+                "semantic_score": round(semantic_scores[i], 4),
+                "keyword_score": keyword_boosts[i],
+            })
+
+        combined.sort(key=lambda x: -x["score"])
+        return combined[:n_results]
+
 
 class RagService:
     def __init__(self):
         self.ollama_url = "http://127.0.0.1:11434/api/generate"
         self.ollama_model = "qwen2.5"
-        self.retriever = HybridRetriever()
+        self.retriever = ChromaRetriever()
         self.memory_system = get_memory_system()
         self.reward_system = get_reward_system()
 
     def call_ollama(self, prompt: str) -> str:
         try:
-            response = requests.post(
-                self.ollama_url,
-                json={
-                    "model": self.ollama_model,
-                    "prompt": prompt,
-                    "stream": False
-                },
-                timeout=120
-            )
-            response.raise_for_status()
-            return response.json()["response"]
+            from urllib.parse import urlparse
+            import json as _json
+            from http.client import HTTPConnection
+
+            parsed = urlparse(self.ollama_url)
+            conn = HTTPConnection(parsed.hostname, parsed.port, timeout=120)
+            body = _json.dumps({"model": self.ollama_model, "prompt": prompt, "stream": False})
+            conn.request("POST", parsed.path, body=body, headers={"Content-Type": "application/json"})
+            resp = conn.getresponse()
+            data = resp.read().decode()
+            conn.close()
+
+            if resp.status != 200:
+                return f"调用 Ollama 失败: HTTP {resp.status}"
+
+            return _json.loads(data)["response"]
         except Exception as e:
             return f"调用 Ollama 失败: {str(e)}"
 
@@ -158,7 +114,7 @@ class RagService:
         match = re.search(r"```sql\n(.*?)\n```", ai_response, re.DOTALL)
         if match:
             return match.group(1).strip()
-        
+
         match = re.search(r"```\w*\n(.*?)\n```", ai_response, re.DOTALL)
         if match:
             content = match.group(1).strip()
@@ -167,31 +123,31 @@ class RagService:
                     data = json.loads(content)
                     if "optimized_sql" in data:
                         return data["optimized_sql"]
-                except:
+                except json.JSONDecodeError:
                     pass
             return content
-        
+
         if ai_response.startswith("{"):
             try:
                 data = json.loads(ai_response)
                 if "optimized_sql" in data:
                     return data["optimized_sql"]
-            except:
+            except json.JSONDecodeError:
                 pass
-        
+
         lines = ai_response.split("\n")
         for line in lines:
             line = line.strip()
             if line.upper().startswith(("SELECT", "INSERT", "UPDATE", "DELETE")):
                 return line
-        
+
         return ai_response
 
     def analyze_sql(self, sql: str, user_id: str = "default_user", conversation_id: str = "default_conv") -> dict:
         self.memory_system.add_short_term_memory(user_id, sql, role="user")
-        
+
         knowledge = self.retriever.retrieve(sql, n_results=3)
-        
+
         knowledge_text = ""
         retrieved_info = []
         for item in knowledge:
@@ -202,12 +158,12 @@ class RagService:
                 "keyword_score": item["keyword_score"],
                 "semantic_score": item["semantic_score"]
             })
-        
+
         if not knowledge_text:
             knowledge_text = "无相关知识"
 
         context = self.memory_system.get_context_prompt(user_id)
-        
+
         prompt = f"""你是SQL优化专家。
 
 {context}
@@ -245,7 +201,7 @@ class RagService:
 
         ai_response = self.call_ollama(prompt)
         self.memory_system.add_short_term_memory(user_id, ai_response, role="assistant")
-        
+
         optimized_sql = self.extract_optimized_sql(ai_response)
 
         return {
@@ -274,9 +230,9 @@ class RagService:
                 data = json.loads(text)
                 if key in data:
                     return data[key]
-        except:
+        except json.JSONDecodeError:
             pass
-        
+
         pattern = rf'"{key}":\s*\[(.*?)\]'
         match = re.search(pattern, text, re.DOTALL)
         if match:
@@ -284,7 +240,7 @@ class RagService:
             items = re.findall(r'"(.*?)"', items_str)
             if items:
                 return items
-        
+
         lines = text.split("\n")
         result = []
         for line in lines:
@@ -293,13 +249,16 @@ class RagService:
                 result.append(line.lstrip("-•0123456789. "))
         return result
 
+
 _rag_service = None
+
 
 def get_rag_service() -> RagService:
     global _rag_service
     if _rag_service is None:
         _rag_service = RagService()
     return _rag_service
+
 
 def analyze_sql(sql: str, user_id: str = "default_user", conversation_id: str = "default_conv") -> dict:
     service = get_rag_service()
