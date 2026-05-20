@@ -6,58 +6,55 @@
     </div>
 
     <div class="main-content">
-      <div class="filter-section">
-        <el-card>
+      <div class="card filter-card">
+        <div class="card-body">
           <div class="filter-row">
-            <el-input v-model="searchKeyword" placeholder="搜索SQL内容..." class="search-input"></el-input>
-            <el-select v-model="filterType" placeholder="筛选类型">
-              <el-option label="全部" value="all"></el-option>
-              <el-option label="SQL优化" value="optimize"></el-option>
-              <el-option label="自然语言转SQL" value="natural"></el-option>
-            </el-select>
-            <el-button type="primary" @click="loadHistory">🔍 搜索</el-button>
-            <el-button @click="clearFilters">清除筛选</el-button>
+            <input v-model="searchKeyword" placeholder="搜索SQL内容..." class="filter-input" />
+            <select v-model="filterType" class="filter-select">
+              <option value="all">全部</option>
+              <option value="optimize">SQL优化</option>
+              <option value="natural">自然语言转SQL</option>
+            </select>
+            <button class="btn btn-primary" @click="loadHistory">搜索</button>
+            <button class="btn btn-outline" @click="clearFilters">清除筛选</button>
           </div>
-        </el-card>
+        </div>
       </div>
 
       <div class="history-list" v-if="historyList.length > 0">
-        <el-timeline>
-          <el-timeline-item v-for="(item, index) in historyList" :key="index">
-            <template #dot>
-              <span class="history-icon">{{ item.type === 'user' ? '👤' : '🤖' }}</span>
-            </template>
-            <el-card class="history-card">
-              <div class="history-header">
-                <span class="history-type" :class="item.type">{{ item.type === 'user' ? '用户查询' : 'AI回复' }}</span>
-                <span class="history-time">{{ formatTime(item.createdAt) }}</span>
+        <div class="timeline">
+          <div v-for="(item, index) in historyList" :key="index" class="timeline-item">
+            <div class="timeline-dot" :class="item.type"></div>
+            <div class="card history-card">
+              <div class="card-body">
+                <div class="history-header">
+                  <span class="history-type" :class="item.type">{{ item.type === 'user' ? '用户查询' : 'AI回复' }}</span>
+                  <span class="history-time">{{ formatTime(item.createdAt) }}</span>
+                </div>
+                <div class="history-content">
+                  <pre class="code-block">{{ truncateContent(item.content) }}</pre>
+                </div>
+                <div class="history-actions">
+                  <button class="btn btn-sm btn-outline" @click="viewDetail(item)">查看详情</button>
+                  <button class="btn btn-sm btn-outline" @click="copyContent(item.content)">复制</button>
+                </div>
               </div>
-              <div class="history-content">
-                <pre class="code-block">{{ truncateContent(item.content) }}</pre>
-              </div>
-              <div class="history-actions">
-                <el-button size="small" @click="viewDetail(item)">查看详情</el-button>
-                <el-button size="small" @click="copyContent(item.content)">复制</el-button>
-              </div>
-            </el-card>
-          </el-timeline-item>
-        </el-timeline>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="empty-state" v-else>
-        <div class="empty-icon">📋</div>
         <p>暂无历史记录</p>
         <p class="empty-hint">开始使用SQL优化或自然语言转SQL功能，记录将保存在这里</p>
       </div>
 
       <div class="pagination-section" v-if="total > pageSize">
-        <el-pagination
-          :current-page="currentPage"
-          :page-size="pageSize"
-          :total="total"
-          @current-change="handlePageChange"
-          layout="prev, pager, next"
-        ></el-pagination>
+        <div class="pagination">
+          <button class="btn btn-sm btn-outline" :disabled="currentPage <= 1" @click="currentPage > 1 && handlePageChange(currentPage - 1)">上一页</button>
+          <span class="page-info">{{ currentPage }} / {{ Math.ceil(total / pageSize) }}</span>
+          <button class="btn btn-sm btn-outline" :disabled="currentPage >= Math.ceil(total / pageSize)" @click="currentPage < Math.ceil(total / pageSize) && handlePageChange(currentPage + 1)">下一页</button>
+        </div>
       </div>
     </div>
   </div>
@@ -133,46 +130,153 @@ const handlePageChange = (page) => {
 }
 
 .page-header {
-  text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .page-header h1 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .page-header p {
   color: #64748b;
+  font-size: 0.9rem;
 }
 
-.filter-section {
-  margin-bottom: 2rem;
+.filter-card {
+  margin-bottom: 1.5rem;
 }
 
 .filter-row {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 }
 
-.search-input {
+.filter-input {
   flex: 1;
   max-width: 300px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  background: white;
+}
+
+.btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-outline {
+  background: white;
+  color: #475569;
+  border: 1px solid #d1d5db;
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: #94a3b8;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 1.25rem;
 }
 
 .history-list {
   margin-bottom: 2rem;
 }
 
-.history-icon {
-  font-size: 1.25rem;
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -1.625rem;
+  top: 1.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  background: white;
+}
+
+.timeline-dot.user {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.timeline-dot.assistant {
+  border-color: #16a34a;
+  background: #dcfce7;
 }
 
 .history-card {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .history-header {
@@ -183,7 +287,7 @@ const handlePageChange = (page) => {
 }
 
 .history-type {
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -205,19 +309,20 @@ const handlePageChange = (page) => {
 }
 
 .history-content {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .code-block {
-  background: #1e293b;
+  background: #0f172a;
   color: #e2e8f0;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 0.875rem;
+  border-radius: 6px;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 13px;
   overflow-x: auto;
   max-height: 150px;
   overflow-y: auto;
+  line-height: 1.5;
 }
 
 .history-actions {
@@ -229,13 +334,8 @@ const handlePageChange = (page) => {
   text-align: center;
   padding: 4rem 2rem;
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
 }
 
 .empty-state p {
@@ -244,13 +344,25 @@ const handlePageChange = (page) => {
 }
 
 .empty-hint {
-  font-size: 0.9rem !important;
-  color: #94a3b8 !important;
+  font-size: 0.9rem;
+  color: #94a3b8;
 }
 
 .pagination-section {
   display: flex;
   justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-info {
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
 @media (max-width: 600px) {
@@ -258,7 +370,7 @@ const handlePageChange = (page) => {
     flex-direction: column;
     align-items: stretch;
   }
-  .search-input {
+  .filter-input {
     max-width: 100%;
   }
 }

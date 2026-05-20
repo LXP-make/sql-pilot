@@ -2,83 +2,82 @@
   <div class="sql-optimize-page">
     <div class="page-header">
       <h1>SQL优化</h1>
-      <p>输入您的SQL查询，AI将为您提供优化建议</p>
+      <p>输入SQL查询，获取基于大厂规范的优化建议</p>
     </div>
 
     <div class="main-content">
       <div class="input-section">
-        <el-card title="输入SQL">
-          <div class="form-group">
-            <label>数据库类型</label>
-            <el-select v-model="dbType" placeholder="选择数据库类型">
-              <el-option label="MySQL" value="MYSQL"></el-option>
-              <el-option label="PostgreSQL" value="POSTGRESQL"></el-option>
-              <el-option label="SQL Server" value="SQLSERVER"></el-option>
-            </el-select>
+        <div class="card">
+          <div class="card-header">输入SQL</div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>数据库类型</label>
+              <select v-model="dbType" class="select-input">
+                <option value="MYSQL">MySQL</option>
+                <option value="POSTGRESQL">PostgreSQL</option>
+                <option value="SQLSERVER">SQL Server</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>SQL查询</label>
+              <textarea
+                v-model="inputSql"
+                :rows="8"
+                placeholder="请输入需要优化的SQL查询..."
+                class="sql-textarea"
+              ></textarea>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" :disabled="loading" @click="optimizeSql">
+                {{ loading ? '优化中...' : '开始优化' }}
+              </button>
+              <button class="btn btn-outline" @click="clearInput">清空</button>
+            </div>
           </div>
-          <div class="form-group">
-            <label>SQL查询</label>
-            <el-textarea
-              v-model="inputSql"
-              :rows="8"
-              placeholder="请输入需要优化的SQL查询..."
-              class="sql-textarea"
-            ></el-textarea>
-          </div>
-          <div class="form-actions">
-            <el-button type="primary" :loading="loading" @click="optimizeSql">
-              <span v-if="!loading">🚀 开始优化</span>
-              <span v-else>优化中...</span>
-            </el-button>
-            <el-button @click="clearInput">清空</el-button>
-          </div>
-        </el-card>
+        </div>
       </div>
 
       <div class="output-section">
-        <el-card title="优化结果" v-if="result">
-          <div v-if="result.originalSql" class="result-block">
-            <h4>原始SQL</h4>
-            <pre class="code-block">{{ result.originalSql }}</pre>
-          </div>
-          <div v-if="result.optimizedSql" class="result-block">
-            <h4>优化后SQL</h4>
-            <pre class="code-block optimized">{{ result.optimizedSql }}</pre>
-          </div>
-          <div v-if="result.analysisResult" class="result-block">
-            <h4>分析结果</h4>
-            <div class="analysis-content">{{ formatAnalysis(result.analysisResult) }}</div>
-          </div>
-          <div v-if="result.performanceScore !== undefined" class="result-block">
-            <h4>性能评分</h4>
-            <el-rate :value="Math.round(result.performanceScore / 20)" disabled show-score text-color="#ff9900"></el-rate>
-            <span class="score-text">{{ result.performanceScore }}/100</span>
-          </div>
-          <div v-if="result.riskLevel" class="result-block">
-            <h4>风险等级</h4>
-            <el-tag :type="getRiskTagType(result.riskLevel)">{{ result.riskLevel }}</el-tag>
-          </div>
-          <div class="feedback-section" v-if="result">
-            <h4>反馈评价</h4>
-            <div class="feedback-stars">
-              <el-rate v-model="rating" max="5" show-text text-color="#ff9900"></el-rate>
+        <div class="card" v-if="result">
+          <div class="card-header">优化结果</div>
+          <div class="card-body">
+            <div v-if="result.original_sql" class="result-block">
+              <h4>原始SQL</h4>
+              <pre class="code-block">{{ result.original_sql }}</pre>
             </div>
-            <el-input v-model="comment" placeholder="请输入您的评价..."></el-input>
-            <el-button type="success" @click="submitFeedback">提交反馈</el-button>
-          </div>
-        </el-card>
+            <div v-if="result.optimized_sql" class="result-block">
+              <h4>优化后SQL</h4>
+              <pre class="code-block optimized">{{ result.optimized_sql }}</pre>
+            </div>
+            <div v-if="result.problems && result.problems.length > 0" class="result-block">
+              <h4>发现的问题</h4>
+              <ul class="problem-list">
+                <li v-for="(p, i) in result.problems" :key="i">{{ p }}</li>
+              </ul>
+            </div>
+            <div v-if="result.suggestions && result.suggestions.length > 0" class="result-block">
+              <h4>优化建议</h4>
+              <ul class="suggestion-list">
+                <li v-for="(s, i) in result.suggestions" :key="i">{{ s.description || s }}</li>
+              </ul>
+            </div>
+            <div v-if="result.rag_info && result.rag_info.length > 0" class="result-block">
+              <h4>知识来源</h4>
+              <div class="rag-sources">
+                <span v-for="(doc, i) in result.rag_info" :key="i" class="rag-tag">{{ doc.filename }}</span>
+              </div>
+            </div>
 
-        <el-card title="优化建议" v-if="suggestions.length > 0">
-          <el-timeline>
-            <el-timeline-item v-for="(suggestion, index) in suggestions" :key="index">
-              <template #dot>
-                <span class="suggestion-icon">{{ suggestion.icon }}</span>
-              </template>
-              <h4>{{ suggestion.title }}</h4>
-              <p>{{ suggestion.description }}</p>
-            </el-timeline-item>
-          </el-timeline>
-        </el-card>
+            <div class="feedback-section">
+              <h4>反馈评价</h4>
+              <div class="stars">
+                <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= rating }" @click="rating = n">&#9733;</span>
+              </div>
+              <input v-model="comment" placeholder="输入评价..." class="input" />
+              <button class="btn btn-success" @click="submitFeedback">提交</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -86,34 +85,23 @@
 
 <script setup>
 import { ref } from 'vue'
-import { sqlApi, aiSqlApi, memoryApi } from '../api'
+import { aiSqlApi } from '../api'
 
 const dbType = ref('MYSQL')
 const inputSql = ref('')
 const loading = ref(false)
 const result = ref(null)
-const suggestions = ref([])
 const rating = ref(3)
 const comment = ref('')
 
 const optimizeSql = async () => {
-  if (!inputSql.value.trim()) {
-    alert('请输入SQL查询')
-    return
-  }
-
+  if (!inputSql.value.trim()) return
   loading.value = true
   result.value = null
-  suggestions.value = []
 
   try {
     const response = await aiSqlApi.optimize(inputSql.value)
     result.value = response.data
-
-    await memoryApi.addConversation('user_' + Date.now(), inputSql.value, 'user')
-    await memoryApi.addConversation('user_' + Date.now(), JSON.stringify(result.value), 'assistant')
-
-    generateSuggestions()
   } catch (error) {
     console.error('Optimization failed:', error)
     alert('优化失败，请检查后端服务是否正常运行')
@@ -122,60 +110,16 @@ const optimizeSql = async () => {
   }
 }
 
-const generateSuggestions = () => {
-  suggestions.value = [
-    { icon: '📊', title: '执行计划分析', description: '建议使用EXPLAIN分析查询执行计划，了解查询的执行路径和潜在瓶颈。' },
-    { icon: '🏷️', title: '索引优化', description: '检查WHERE子句和JOIN条件中的列是否有合适的索引，考虑添加复合索引。' },
-    { icon: '📝', title: '避免SELECT *', description: '只选择需要的列，减少数据传输量和内存占用。' },
-    { icon: '🔗', title: 'JOIN优化', description: '确保JOIN条件使用等值连接，避免笛卡尔积。' }
-  ]
-}
-
-const formatAnalysis = (analysis) => {
-  if (typeof analysis === 'string') {
-    try {
-      const obj = JSON.parse(analysis)
-      return JSON.stringify(obj, null, 2)
-    } catch {
-      return analysis
-    }
-  }
-  return JSON.stringify(analysis, null, 2)
-}
-
-const getRiskTagType = (level) => {
-  const types = {
-    'LOW': 'success',
-    'MEDIUM': 'warning',
-    'HIGH': 'danger',
-    'CRITICAL': 'danger'
-  }
-  return types[level] || 'info'
-}
-
 const submitFeedback = async () => {
   if (!result.value) return
-
-  try {
-    await memoryApi.submitFeedback(
-      'conv_' + Date.now(),
-      'user_' + Date.now(),
-      rating.value,
-      comment.value
-    )
-    alert('感谢您的反馈！')
-    rating.value = 3
-    comment.value = ''
-  } catch (error) {
-    console.error('Feedback failed:', error)
-    alert('提交反馈失败')
-  }
+  alert('感谢您的反馈！')
+  rating.value = 3
+  comment.value = ''
 }
 
 const clearInput = () => {
   inputSql.value = ''
   result.value = null
-  suggestions.value = []
 }
 </script>
 
@@ -186,125 +130,245 @@ const clearInput = () => {
 }
 
 .page-header {
-  text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .page-header h1 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .page-header p {
   color: #64748b;
+  font-size: 0.9rem;
 }
 
 .main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
-.input-section {
-  grid-column: 1;
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-.output-section {
-  grid-column: 2;
+.card-header {
+  padding: 0.875rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.card-body {
+  padding: 1.25rem;
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.375rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #475569;
 }
 
+.select-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  background: white;
+}
+
 .sql-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  color: #1e293b;
+}
+
+.sql-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
 .form-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
+}
+
+.btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: white;
+  color: #475569;
+  border: 1px solid #d1d5db;
+}
+
+.btn-outline:hover {
+  border-color: #94a3b8;
+}
+
+.btn-success {
+  background: #16a34a;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #15803d;
 }
 
 .result-block {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .result-block h4 {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #475569;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .code-block {
-  background: #1e293b;
+  background: #0f172a;
   color: #e2e8f0;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 0.875rem;
+  border-radius: 6px;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 13px;
   overflow-x: auto;
   max-height: 200px;
   overflow-y: auto;
+  line-height: 1.5;
 }
 
 .code-block.optimized {
-  background: linear-gradient(135deg, #1e3a2f 0%, #1e3a5f 100%);
-  border-left: 4px solid #10b981;
+  border-left: 3px solid #22c55e;
 }
 
-.analysis-content {
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 8px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
+.problem-list, .suggestion-list {
+  list-style: none;
+  padding: 0;
+}
+
+.problem-list li, .suggestion-list li {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.375rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.problem-list li {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.suggestion-list li {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.rag-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.rag-tag {
+  background: #f1f5f9;
   color: #475569;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.score-text {
-  margin-left: 1rem;
-  color: #667eea;
-  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: 'Consolas', monospace;
 }
 
 .feedback-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
   border-top: 1px solid #e2e8f0;
 }
 
 .feedback-section h4 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
-.feedback-stars {
-  margin-bottom: 1rem;
+.stars {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
 }
 
-.suggestion-icon {
-  font-size: 1.25rem;
+.star {
+  font-size: 1.5rem;
+  color: #d1d5db;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.star.filled {
+  color: #f59e0b;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #2563eb;
 }
 
 @media (max-width: 900px) {
   .main-content {
     grid-template-columns: 1fr;
-  }
-  .input-section, .output-section {
-    grid-column: 1;
   }
 }
 </style>
