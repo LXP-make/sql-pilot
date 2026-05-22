@@ -26,8 +26,12 @@ class ChromaRetriever:
 
     def _get_collection(self):
         if self._collection is None:
-            client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
-            self._collection = client.get_or_create_collection(name=COLLECTION_NAME)
+            try:
+                client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+                self._collection = client.get_or_create_collection(name=COLLECTION_NAME)
+            except Exception as e:
+                print(f"ChromaDB init failed: {e}, falling back to no-RAG mode")
+                return None
         return self._collection
 
     def _keyword_boost(self, query: str, documents: list[str]) -> list[float]:
@@ -45,6 +49,9 @@ class ChromaRetriever:
     def retrieve(self, query: str, n_results: int = 3) -> list[dict]:
         """Search ChromaDB with semantic + keyword hybrid scoring."""
         collection = self._get_collection()
+        if collection is None:
+            return []
+
         model = self._get_model()
 
         query_embedding = model.encode(query).tolist()

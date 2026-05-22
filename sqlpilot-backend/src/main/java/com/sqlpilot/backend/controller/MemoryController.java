@@ -20,13 +20,13 @@ public class MemoryController {
     private MemoryService memoryService;
 
     @PostMapping("/conversation")
-    public ResponseEntity<Map<String, Object>> addConversation(
-            @RequestParam String userId,
-            @RequestParam String content,
-            @RequestParam(defaultValue = "user") String role) {
-        
+    public ResponseEntity<Map<String, Object>> addConversation(@RequestBody Map<String, Object> body) {
+        String userId = body.getOrDefault("userId", "").toString();
+        String content = body.getOrDefault("content", "").toString();
+        String role = body.getOrDefault("role", "user").toString();
+
         memoryService.addConversation(userId, content, role);
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", "对话记录已保存");

@@ -18,7 +18,10 @@ export const sqlApi = {
 
 export const aiSqlApi = {
   optimize: (sql) => aiApi.post('/optimize', { sql }),
-  naturalToSql: (query) => aiApi.post('/natural-to-sql', { query })
+  naturalToSql: (query, tableSchema) => aiApi.post('/natural-to-sql', {
+    natural_query: query,
+    table_schema: tableSchema || null
+  })
 }
 
 export const memoryApi = {

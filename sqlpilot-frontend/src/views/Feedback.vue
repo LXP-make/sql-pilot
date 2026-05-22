@@ -32,6 +32,7 @@
                 :rows="6"
                 placeholder="请详细描述您的反馈内容..."
                 class="form-textarea"
+                style="font-family:var(--font-sans);"
               ></textarea>
             </div>
             <div class="form-group">
@@ -40,6 +41,7 @@
             </div>
             <div class="form-actions">
               <button class="btn btn-primary" :disabled="submitting" @click="submitFeedback">
+                <span v-if="submitting" class="spinner"></span>
                 {{ submitting ? '提交中...' : '提交反馈' }}
               </button>
               <button class="btn btn-outline" @click="resetForm">重置</button>
@@ -81,7 +83,7 @@
                   <span class="review-time">{{ review.time }}</span>
                 </div>
                 <p class="review-content">{{ review.content }}</p>
-                <span class="review-type">{{ getTypeLabel(review.type) }}</span>
+                <span class="review-type-tag">{{ getTypeLabel(review.type) }}</span>
               </div>
             </div>
             <div v-else class="empty-reviews">暂无评价</div>
@@ -112,12 +114,7 @@ const reviews = ref([
 ])
 
 const getTypeLabel = (type) => {
-  const labels = {
-    suggestion: '功能建议',
-    bug: 'Bug报告',
-    experience: '使用体验',
-    other: '其他'
-  }
+  const labels = { suggestion: '功能建议', bug: 'Bug报告', experience: '使用体验', other: '其他' }
   return labels[type] || '其他'
 }
 
@@ -128,7 +125,6 @@ const submitFeedback = async () => {
   }
 
   submitting.value = true
-
   try {
     await memoryApi.submitFeedback(
       'feedback_' + Date.now(),
@@ -145,7 +141,6 @@ const submitFeedback = async () => {
     })
 
     feedbackCount.value++
-
     alert('感谢您的反馈！我们会认真对待每一条建议。')
     resetForm()
   } catch (error) {
@@ -170,184 +165,30 @@ const resetForm = () => {
   margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 1.5rem;
-}
-
-.page-header h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.25rem;
-}
-
-.page-header p {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.main-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-}
-
-.card-header {
-  padding: 0.875rem 1.25rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #1e293b;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-}
-
-.card-body {
-  padding: 1.25rem;
-}
-
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.375rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.form-select {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #1e293b;
-  background: white;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  resize: vertical;
-  color: #1e293b;
-}
-
-.form-textarea:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #1e293b;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn {
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.15s ease;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-outline {
-  background: white;
-  color: #475569;
-  border: 1px solid #d1d5db;
-}
-
-.btn-outline:hover {
-  border-color: #94a3b8;
-}
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .stat-item {
   text-align: center;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  padding: var(--space-5);
+  background: var(--gray-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
 }
 
 .stat-value {
-  font-size: 1.5rem;
+  font-size: var(--text-3xl);
   font-weight: 700;
-  color: #2563eb;
-  margin-bottom: 0.25rem;
+  color: var(--color-primary);
+  margin-bottom: var(--space-1);
 }
 
 .stat-label {
-  font-size: 0.8rem;
-  color: #64748b;
-}
-
-.stars {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 0.75rem;
-}
-
-.star {
-  font-size: 1.5rem;
-  color: #d1d5db;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.star.filled {
-  color: #f59e0b;
+  font-size: var(--text-sm);
+  color: var(--gray-500);
 }
 
 .reviews-list {
@@ -356,10 +197,9 @@ const resetForm = () => {
 }
 
 .review-item {
-  padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--gray-200);
 }
-
 .review-item:last-child {
   border-bottom: none;
 }
@@ -368,7 +208,7 @@ const resetForm = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .review-stars {
@@ -378,44 +218,37 @@ const resetForm = () => {
 
 .star-mini {
   font-size: 1rem;
-  color: #d1d5db;
+  color: var(--gray-300);
 }
-
 .star-mini.filled {
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 .review-time {
-  font-size: 0.8rem;
-  color: #94a3b8;
+  font-size: var(--text-xs);
+  color: var(--gray-400);
 }
 
 .review-content {
-  color: #475569;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  margin-bottom: 0.5rem;
+  color: var(--gray-600);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-2);
 }
 
-.review-type {
-  font-size: 0.75rem;
-  color: #2563eb;
-  background: #eff6ff;
+.review-type-tag {
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
   padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-block;
 }
 
 .empty-reviews {
   text-align: center;
-  color: #94a3b8;
-  font-size: 0.9rem;
-  padding: 2rem 0;
-}
-
-@media (max-width: 900px) {
-  .main-content {
-    grid-template-columns: 1fr;
-  }
+  color: var(--gray-400);
+  font-size: var(--text-sm);
+  padding: var(--space-8) 0;
 }
 </style>

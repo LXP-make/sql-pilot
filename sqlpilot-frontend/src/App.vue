@@ -3,7 +3,7 @@
     <header class="app-header">
       <div class="header-content">
         <div class="logo">
-          <span class="logo-text">SQL Pilot</span>
+          <router-link to="/" class="logo-text">SQL Pilot</router-link>
         </div>
         <nav class="nav-menu">
           <router-link to="/" class="nav-item" :class="{ active: $route.path === '/' }">首页</router-link>
@@ -15,7 +15,11 @@
       </div>
     </header>
     <main class="app-main">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
     <footer class="app-footer">
       <p>SQL Pilot &mdash; SQL性能优化助手</p>
@@ -26,20 +30,7 @@
 <script setup>
 </script>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: #f5f6f8;
-  color: #1e293b;
-  -webkit-font-smoothing: antialiased;
-}
-
+<style scoped>
 .app-container {
   min-height: 100vh;
   display: flex;
@@ -47,19 +38,22 @@ body {
 }
 
 .app-header {
-  background: #1e293b;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--gray-800);
   color: white;
-  padding: 0 1rem;
-  height: 56px;
+  padding: 0 var(--space-4);
+  height: var(--header-height);
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid var(--gray-700);
 }
 
 .header-content {
-  max-width: 1400px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 var(--space-8);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -67,49 +61,76 @@ body {
 }
 
 .logo-text {
-  font-size: 1.25rem;
+  font-size: var(--text-xl);
   font-weight: 700;
   letter-spacing: 0.5px;
+  color: white;
+  text-decoration: none;
+}
+.logo-text:hover {
+  color: white;
 }
 
 .nav-menu {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 
 .nav-item {
-  color: #94a3b8;
+  color: var(--gray-400);
   text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: all var(--transition-fast);
 }
-
 .nav-item:hover {
   color: white;
-  background: #334155;
+  background: var(--gray-700);
 }
-
 .nav-item.active {
   color: white;
-  background: #2563eb;
+  background: var(--color-primary);
 }
 
 .app-main {
   flex: 1;
-  max-width: 1400px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
   width: 100%;
-  padding: 1.5rem 2rem;
+  padding: var(--space-6) var(--space-8);
 }
 
 .app-footer {
   text-align: center;
-  padding: 1rem;
-  color: #94a3b8;
-  font-size: 0.8rem;
-  border-top: 1px solid #e2e8f0;
+  padding: var(--space-4);
+  color: var(--gray-400);
+  font-size: var(--text-xs);
+  border-top: 1px solid var(--gray-200);
+}
+
+/* Page transition */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (max-width: 640px) {
+  .header-content {
+    padding: 0 var(--space-4);
+  }
+  .nav-item {
+    padding: var(--space-2);
+    font-size: var(--text-xs);
+  }
 }
 </style>

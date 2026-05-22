@@ -12,7 +12,7 @@
           <div class="card-body">
             <div class="form-group">
               <label>数据库类型</label>
-              <select v-model="dbType" class="select-input">
+              <select v-model="dbType" class="form-select">
                 <option value="MYSQL">MySQL</option>
                 <option value="POSTGRESQL">PostgreSQL</option>
                 <option value="SQLSERVER">SQL Server</option>
@@ -24,11 +24,12 @@
                 v-model="inputSql"
                 :rows="8"
                 placeholder="请输入需要优化的SQL查询..."
-                class="sql-textarea"
+                class="form-textarea"
               ></textarea>
             </div>
             <div class="form-actions">
               <button class="btn btn-primary" :disabled="loading" @click="optimizeSql">
+                <span v-if="loading" class="spinner"></span>
                 {{ loading ? '优化中...' : '开始优化' }}
               </button>
               <button class="btn btn-outline" @click="clearInput">清空</button>
@@ -49,22 +50,72 @@
               <h4>优化后SQL</h4>
               <pre class="code-block optimized">{{ result.optimized_sql }}</pre>
             </div>
-            <div v-if="result.problems && result.problems.length > 0" class="result-block">
+            <div v-if="result.problems?.length" class="result-block">
               <h4>发现的问题</h4>
-              <ul class="problem-list">
+              <ul class="result-list problem-list">
                 <li v-for="(p, i) in result.problems" :key="i">{{ p }}</li>
               </ul>
             </div>
-            <div v-if="result.suggestions && result.suggestions.length > 0" class="result-block">
+            <div v-if="result.suggestions?.length" class="result-block">
               <h4>优化建议</h4>
-              <ul class="suggestion-list">
+              <ul class="result-list suggestion-list">
                 <li v-for="(s, i) in result.suggestions" :key="i">{{ s.description || s }}</li>
               </ul>
             </div>
-            <div v-if="result.rag_info && result.rag_info.length > 0" class="result-block">
+            <div v-if="result.rag_info?.length" class="result-block">
               <h4>知识来源</h4>
               <div class="rag-sources">
-                <span v-for="(doc, i) in result.rag_info" :key="i" class="rag-tag">{{ doc.filename }}</span>
+                <span v-for="(doc, i) in result.rag_info" :key="i" class="tag">{{ doc.filename }}</span>
+              </div>
+            </div>
+
+            <!-- Performance Comparison -->
+            <div class="result-block perf-section">
+              <h4>性能对比</h4>
+              <div class="perf-actions">
+                <button
+                  class="btn btn-sm btn-outline"
+                  :disabled="execLoading"
+                  @click="executeSql(result.original_sql, 'original')"
+                >
+                  <span v-if="execLoading && executingTarget === 'original'" class="spinner"></span>
+                  {{ execLoading && executingTarget === 'original' ? '执行中...' : '执行原始SQL' }}
+                </button>
+                <button
+                  class="btn btn-sm btn-success"
+                  :disabled="execLoading"
+                  @click="executeSql(result.optimized_sql, 'optimized')"
+                >
+                  <span v-if="execLoading && executingTarget === 'optimized'" class="spinner"></span>
+                  {{ execLoading && executingTarget === 'optimized' ? '执行中...' : '执行优化后SQL' }}
+                </button>
+              </div>
+              <div v-if="originalExecResult || optimizedExecResult" class="perf-results">
+                <div v-if="originalExecResult" class="perf-card">
+                  <div class="perf-label">原始SQL</div>
+                  <div v-if="originalExecResult.success">
+                    <span class="perf-badge success">成功</span>
+                    <div class="perf-metric">耗时: <strong>{{ originalExecResult.executionTimeMs }}</strong> ms</div>
+                    <div class="perf-metric">行数: <strong>{{ originalExecResult.rowCount }}</strong></div>
+                  </div>
+                  <div v-else class="perf-error">{{ originalExecResult.error }}</div>
+                </div>
+                <div v-if="optimizedExecResult" class="perf-card">
+                  <div class="perf-label">优化后SQL</div>
+                  <div v-if="optimizedExecResult.success">
+                    <span class="perf-badge success">成功</span>
+                    <div class="perf-metric">耗时: <strong>{{ optimizedExecResult.executionTimeMs }}</strong> ms</div>
+                    <div class="perf-metric">行数: <strong>{{ optimizedExecResult.rowCount }}</strong></div>
+                  </div>
+                  <div v-else class="perf-error">{{ optimizedExecResult.error }}</div>
+                </div>
+              </div>
+              <div
+                v-if="originalExecResult?.success && optimizedExecResult?.success && optimizedExecResult.executionTimeMs > 0"
+                class="perf-improvement"
+              >
+                性能提升: <strong class="improvement-value">{{ improvementPercent }}%</strong>
+                <span class="improvement-detail">({{ originalExecResult.executionTimeMs }}ms &rarr; {{ optimizedExecResult.executionTimeMs }}ms)</span>
               </div>
             </div>
 
@@ -73,7 +124,7 @@
               <div class="stars">
                 <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= rating }" @click="rating = n">&#9733;</span>
               </div>
-              <input v-model="comment" placeholder="输入评价..." class="input" />
+              <input v-model="comment" placeholder="输入评价..." class="form-input" style="margin-bottom:0.75rem;" />
               <button class="btn btn-success" @click="submitFeedback">提交</button>
             </div>
           </div>
@@ -84,8 +135,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { aiSqlApi } from '../api'
+import { ref, computed } from 'vue'
+import axios from 'axios'
 
 const dbType = ref('MYSQL')
 const inputSql = ref('')
@@ -93,15 +144,50 @@ const loading = ref(false)
 const result = ref(null)
 const rating = ref(3)
 const comment = ref('')
+const originalExecResult = ref(null)
+const optimizedExecResult = ref(null)
+const execLoading = ref(false)
+const executingTarget = ref('')
+
+const improvementPercent = computed(() => {
+  if (!originalExecResult.value?.success || !optimizedExecResult.value?.success) return 0
+  if (!optimizedExecResult.value.executionTimeMs) return 0
+  return Math.round((1 - optimizedExecResult.value.executionTimeMs / originalExecResult.value.executionTimeMs) * 100)
+})
 
 const optimizeSql = async () => {
   if (!inputSql.value.trim()) return
   loading.value = true
   result.value = null
+  originalExecResult.value = null
+  optimizedExecResult.value = null
 
   try {
-    const response = await aiSqlApi.optimize(inputSql.value)
-    result.value = response.data
+    const response = await axios.post('/ai/optimize', {
+      sql: inputSql.value,
+      db_type: dbType.value
+    })
+    const data = response.data
+    if (data.success && data.data) {
+      result.value = {
+        original_sql: data.data.original_sql,
+        optimized_sql: data.data.optimized_sql,
+        problems: data.data.problems,
+        suggestions: data.data.optimization_suggestions || [],
+        rag_info: data.data.rag_info || []
+      }
+      // Save to memory in background
+      axios.post('/api/memory/conversation', null, {
+        params: { userId: 'user_1', content: inputSql.value, role: 'user' }
+      })
+      if (data.data.optimized_sql) {
+        axios.post('/api/memory/conversation', null, {
+          params: { userId: 'user_1', content: data.data.optimized_sql, role: 'assistant' }
+        })
+      }
+    } else {
+      throw new Error(data.message || '优化失败')
+    }
   } catch (error) {
     console.error('Optimization failed:', error)
     alert('优化失败，请检查后端服务是否正常运行')
@@ -110,7 +196,30 @@ const optimizeSql = async () => {
   }
 }
 
-const submitFeedback = async () => {
+const executeSql = async (sql, target) => {
+  if (!sql) return
+  execLoading.value = true
+  executingTarget.value = target
+
+  try {
+    const response = await axios.post('/api/sql/execute', { sql, maxRows: 10 })
+    const data = response.data
+    if (data.success && data.data) {
+      if (target === 'original') originalExecResult.value = data.data
+      else optimizedExecResult.value = data.data
+    } else {
+      throw new Error(data.message || '执行失败')
+    }
+  } catch (error) {
+    const errResult = { success: false, error: error.message || '执行失败', executionTimeMs: 0, rowCount: 0 }
+    if (target === 'original') originalExecResult.value = errResult
+    else optimizedExecResult.value = errResult
+  } finally {
+    execLoading.value = false
+  }
+}
+
+const submitFeedback = () => {
   if (!result.value) return
   alert('感谢您的反馈！')
   rating.value = 3
@@ -120,6 +229,8 @@ const submitFeedback = async () => {
 const clearInput = () => {
   inputSql.value = ''
   result.value = null
+  originalExecResult.value = null
+  optimizedExecResult.value = null
 }
 </script>
 
@@ -129,246 +240,128 @@ const clearInput = () => {
   margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 1.5rem;
-}
-
-.page-header h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.25rem;
-}
-
-.page-header p {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.main-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.card-header {
-  padding: 0.875rem 1.25rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #1e293b;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-}
-
-.card-body {
-  padding: 1.25rem;
-}
-
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.375rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.select-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #1e293b;
-  background: white;
-}
-
-.sql-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  resize: vertical;
-  color: #1e293b;
-}
-
-.sql-textarea:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn {
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.15s ease;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-outline {
-  background: white;
-  color: #475569;
-  border: 1px solid #d1d5db;
-}
-
-.btn-outline:hover {
-  border-color: #94a3b8;
-}
-
-.btn-success {
-  background: #16a34a;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #15803d;
-}
-
 .result-block {
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--space-5);
 }
-
 .result-block h4 {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: #475569;
-  margin-bottom: 0.5rem;
+  color: var(--gray-600);
+  margin-bottom: var(--space-2);
 }
 
-.code-block {
-  background: #0f172a;
-  color: #e2e8f0;
-  padding: 0.875rem;
-  border-radius: 6px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
-  overflow-x: auto;
-  max-height: 200px;
-  overflow-y: auto;
-  line-height: 1.5;
-}
-
-.code-block.optimized {
-  border-left: 3px solid #22c55e;
-}
-
-.problem-list, .suggestion-list {
+.result-list {
   list-style: none;
   padding: 0;
 }
-
-.problem-list li, .suggestion-list li {
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.375rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
+.result-list li {
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 
 .problem-list li {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--color-danger-light);
+  color: var(--color-danger);
 }
 
 .suggestion-list li {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .rag-sources {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: var(--space-1);
 }
 
-.rag-tag {
-  background: #f1f5f9;
-  color: #475569;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-family: 'Consolas', monospace;
+/* Performance */
+.perf-section {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--gray-200);
 }
 
-.feedback-section {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.feedback-section h4 {
-  margin-bottom: 0.5rem;
-}
-
-.stars {
+.perf-actions {
   display: flex;
-  gap: 0.25rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
-.star {
-  font-size: 1.5rem;
-  color: #d1d5db;
-  cursor: pointer;
-  transition: color 0.15s;
+.perf-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
-.star.filled {
-  color: #f59e0b;
+.perf-card {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--gray-50);
 }
 
-.input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  margin-bottom: 0.75rem;
+.perf-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--gray-500);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.input:focus {
-  outline: none;
-  border-color: #2563eb;
+.perf-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+.perf-badge.success {
+  background: var(--color-success-light);
+  color: var(--color-success);
 }
 
-@media (max-width: 900px) {
-  .main-content {
+.perf-metric {
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  margin-top: var(--space-1);
+}
+
+.perf-error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+}
+
+.perf-improvement {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-success-light);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.improvement-value {
+  color: var(--color-success);
+  font-size: var(--text-lg);
+}
+
+.improvement-detail {
+  color: var(--gray-500);
+  font-size: var(--text-xs);
+  margin-left: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .perf-results {
     grid-template-columns: 1fr;
+  }
+  .perf-actions {
+    flex-direction: column;
   }
 }
 </style>

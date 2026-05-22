@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -23,7 +24,7 @@ class OptimizeRequest(BaseModel):
 
 class NaturalToSqlRequest(BaseModel):
     natural_query: str
-    table_schema: dict = None
+    table_schema: Optional[dict] = None
 
 @app.get("/")
 def home():
